@@ -1,0 +1,44 @@
+// Modelo de datos de MediCita RD — Épica 1: usuarios, roles y auditoría
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PACIENTE
+  CENTRO_MEDICO
+}
+
+model User {
+  id           String     @id @default(uuid())
+  fullName     String     @db.VarChar(120)
+  email        String     @unique @db.VarChar(254)
+  passwordHash String
+  role         Role       @default(PACIENTE)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+
+  @@index([role])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   @db.VarChar(40)
+  detail    String?  @db.VarChar(500)
+  ip        String?  @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([userId])
+  @@index([createdAt])
+}

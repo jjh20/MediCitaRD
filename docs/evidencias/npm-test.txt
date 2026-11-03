@@ -1,0 +1,129 @@
+# Salida de 'npm test' — 2026-11-03 00:40 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
+
+
+> medicita-rd@0.1.0 test
+> npm run test -w @medicita/api
+
+
+> @medicita/api@0.1.0 test
+> npm run test:unit && npm run test:e2e
+
+
+> @medicita/api@0.1.0 test:unit
+> jest --runInBand
+
+
+Test Suites: 4 passed, 4 total
+Tests:       36 passed, 36 total
+Snapshots:   0 total
+Time:        5.371 s, estimated 6 s
+Ran all test suites.
+
+> @medicita/api@0.1.0 test:e2e
+> jest --config ./test/jest-e2e.json --runInBand
+
+
+Test Suites: 2 passed, 2 total
+Tests:       43 passed, 43 total
+Snapshots:   0 total
+Time:        14.47 s, estimated 18 s
+Ran all test suites.
+
+Código de salida: 0
+
+## Detalle por caso
+
+### Pruebas unitarias (jest): 36/36 aprobadas
+
+auth.service.spec.ts
+  ✔ AuthService › register › crea al usuario con la contraseña hasheada y audita REGISTER
+  ✔ AuthService › register › rechaza registrarse como ADMIN aunque se salte el DTO
+  ✔ AuthService › register › rechaza un correo duplicado
+  ✔ AuthService › login › acepta credenciales válidas y audita LOGIN_SUCCESS
+  ✔ AuthService › login › rechaza una contraseña incorrecta con mensaje genérico y audita LOGIN_FAILED
+  ✔ AuthService › login › rechaza un correo inexistente con el mismo mensaje genérico
+  ✔ AuthService › login › impide entrar a un usuario desactivado
+  ✔ AuthService › sesión › emite un JWT que expira y lo verifica
+  ✔ AuthService › sesión › rechaza un token manipulado
+  ✔ AuthService › sesión › la cookie es httpOnly, sameSite=lax y secure solo en producción
+  ✔ AuthService › sesión › audita el logout solo si el token es válido
+
+users.service.spec.ts
+  ✔ UsersService › changeRole › cambia el rol y lo audita con el actor y el detalle
+  ✔ UsersService › changeRole › impide que el admin cambie su propio rol
+  ✔ UsersService › changeRole › devuelve 404 si el usuario no existe
+  ✔ UsersService › changeRole › rechaza asignar el mismo rol que ya tiene
+  ✔ UsersService › changeRole › no permite quitar el rol al último administrador activo
+  ✔ UsersService › changeRole › sí permite quitar el rol a un admin si queda otro activo
+  ✔ UsersService › setActive › desactiva un usuario y audita USER_DEACTIVATED
+  ✔ UsersService › setActive › activa un usuario y audita USER_ACTIVATED
+  ✔ UsersService › setActive › impide que el admin se desactive a sí mismo
+  ✔ UsersService › setActive › no permite desactivar al último administrador activo
+  ✔ UsersService › setActive › rechaza un cambio sin efecto (ya estaba activo)
+  ✔ UsersService › expone el catálogo de roles con permisos
+
+audit.service.spec.ts
+  ✔ AuditService › record › guarda acción, usuario, detalle e IP
+  ✔ AuditService › record › permite eventos anónimos y recorta detalles largos
+  ✔ AuditService › record › no rompe la operación si la base de datos falla
+  ✔ AuditService › find › filtra por acción, usuario y rango de fechas, y pagina
+  ✔ AuditService › find › sin filtros consulta todo
+
+password-policy.spec.ts
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Cambiar-Esto-123!
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Demo-Medicita-2026!
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Abcdefgh1$
+  ✔ Política de contraseñas › rechaza una contraseña muy corta
+  ✔ Política de contraseñas › rechaza una contraseña sin mayúscula
+  ✔ Política de contraseñas › rechaza una contraseña sin minúscula
+  ✔ Política de contraseñas › rechaza una contraseña sin dígito
+  ✔ Política de contraseñas › rechaza una contraseña sin símbolo
+
+### Pruebas e2e (jest + supertest, base medicita_test): 43/43 aprobadas
+
+access.e2e-spec.ts
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/users y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/audit y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/modules/paciente y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/modules/centro y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/auth/me y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en PATCH /api/users/00000000-0000-4000-8000-000000000000/role y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a paciente en /api/users y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a paciente en /api/audit y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a paciente en /api/modules/centro y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a centro en /api/users y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a centro en /api/audit y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a centro en /api/modules/paciente y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a admin en /api/modules/paciente y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a admin en /api/modules/centro y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-14 permite a admin entrar a /api/users
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-14 permite a admin entrar a /api/audit
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-14 permite a admin entrar a /api/users/roles
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-14 permite a paciente entrar a /api/modules/paciente
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-14 permite a centro entrar a /api/modules/centro
+  ✔ Roles, permisos y auditoría (e2e) › HU-04 Asignación de roles › TC-15 el admin cambia el rol, queda auditado y la sesión vieja se invalida
+  ✔ Roles, permisos y auditoría (e2e) › HU-04 Asignación de roles › TC-15b un admin puede promover a otro usuario a Administrador
+  ✔ Roles, permisos y auditoría (e2e) › HU-04 Asignación de roles › TC-17 el admin no puede cambiar su propio rol ni desactivarse
+  ✔ Roles, permisos y auditoría (e2e) › HU-04 Asignación de roles › TC-18 valida el rol, el id y la existencia del usuario
+  ✔ Roles, permisos y auditoría (e2e) › HU-04 Asignación de roles › TC-19 lista y busca usuarios sin exponer contraseñas
+  ✔ Roles, permisos y auditoría (e2e) › HU-07 Activación y desactivación › TC-16 desactivar corta la sesión y bloquea el login; reactivar lo devuelve
+  ✔ Roles, permisos y auditoría (e2e) › HU-08 Consulta de auditoría › TC-20 filtra por acción, usuario y rango de fechas
+  ✔ Roles, permisos y auditoría (e2e) › HU-08 Consulta de auditoría › TC-21 /audit/access-denied solo acepta la clave interna del middleware
+
+auth.e2e-spec.ts
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-01 registra un Paciente, inicia sesión y audita REGISTER
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-02 registra un Centro médico
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-03 rechaza registrarse como Administrador
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-04 rechaza una contraseña débil (corta)
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-04 rechaza una contraseña débil (sin mayúscula)
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-04 rechaza una contraseña débil (sin minúscula)
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-04 rechaza una contraseña débil (sin número)
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-04 rechaza una contraseña débil (sin símbolo)
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-05 rechaza un correo duplicado (sin importar mayúsculas)
+  ✔ Autenticación (e2e) › HU-01 Registro › TC-06 rechaza datos inválidos y campos no permitidos
+  ✔ Autenticación (e2e) › HU-02 Inicio de sesión › TC-07 inicia sesión con cookie httpOnly, sameSite=lax y expiración de 8 h
+  ✔ Autenticación (e2e) › HU-02 Inicio de sesión › TC-07b la sesión permite consultar /auth/me
+  ✔ Autenticación (e2e) › HU-02 Inicio de sesión › TC-08 rechaza credenciales incorrectas con mensaje genérico y audita LOGIN_FAILED
+  ✔ Autenticación (e2e) › HU-02 Inicio de sesión › TC-10 un usuario desactivado no puede iniciar sesión
+  ✔ Autenticación (e2e) › HU-02 Inicio de sesión › TC-11 rechaza un token alterado
+  ✔ Autenticación (e2e) › HU-03 Cierre de sesión › TC-09 cierra la sesión, borra la cookie y audita LOGOUT

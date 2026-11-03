@@ -1,4 +1,4 @@
-# Salida de 'npm test' — 2026-11-03 01:17 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
+# Salida de 'npm test' — 2026-11-03 01:43 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
 
 
 > medicita-rd@0.1.0 test
@@ -16,7 +16,7 @@
 Test Suites: 4 passed, 4 total
 Tests:       36 passed, 36 total
 Snapshots:   0 total
-Time:        8.976 s, estimated 10 s
+Time:        7.961 s
 Ran all test suites.
 
 > @medicita/api@0.1.0 test:e2e
@@ -26,7 +26,7 @@ Ran all test suites.
 Test Suites: 2 passed, 2 total
 Tests:       44 passed, 44 total
 Snapshots:   0 total
-Time:        21.705 s, estimated 22 s
+Time:        17.751 s, estimated 23 s
 Ran all test suites.
 
 Código de salida: 0
@@ -48,6 +48,13 @@ auth.service.spec.ts
   ✔ AuthService › sesión › la cookie es httpOnly, sameSite=lax y secure solo en producción
   ✔ AuthService › sesión › audita el logout solo si el token es válido
 
+audit.service.spec.ts
+  ✔ AuditService › record › guarda acción, usuario, detalle e IP
+  ✔ AuditService › record › permite eventos anónimos y recorta detalles largos
+  ✔ AuditService › record › no rompe la operación si la base de datos falla
+  ✔ AuditService › find › filtra por acción, usuario y rango de fechas, y pagina
+  ✔ AuditService › find › sin filtros consulta todo
+
 users.service.spec.ts
   ✔ UsersService › changeRole › cambia el rol y lo audita con el actor y el detalle
   ✔ UsersService › changeRole › impide que el admin cambie su propio rol
@@ -62,16 +69,9 @@ users.service.spec.ts
   ✔ UsersService › setActive › rechaza un cambio sin efecto (ya estaba activo)
   ✔ UsersService › expone el catálogo de roles con permisos
 
-audit.service.spec.ts
-  ✔ AuditService › record › guarda acción, usuario, detalle e IP
-  ✔ AuditService › record › permite eventos anónimos y recorta detalles largos
-  ✔ AuditService › record › no rompe la operación si la base de datos falla
-  ✔ AuditService › find › filtra por acción, usuario y rango de fechas, y pagina
-  ✔ AuditService › find › sin filtros consulta todo
-
 password-policy.spec.ts
-  ✔ Política de contraseñas › acepta una contraseña fuerte: Cambiar-Esto-123!
-  ✔ Política de contraseñas › acepta una contraseña fuerte: Demo-Medicita-2026!
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Admin1234!
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Demo12345!
   ✔ Política de contraseñas › acepta una contraseña fuerte: Abcdefgh1$
   ✔ Política de contraseñas › rechaza una contraseña muy corta
   ✔ Política de contraseñas › rechaza una contraseña sin mayúscula

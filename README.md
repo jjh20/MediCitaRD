@@ -84,9 +84,9 @@ El seed (`npm run db:seed`) crea estas cuentas:
 
 | Rol | Correo | Contraseña |
 |---|---|---|
-| Administrador | `admin@medicita.local` | `Cambiar-Esto-123!` |
-| Paciente | `paciente@medicita.local` | `Demo-Medicita-2026!` |
-| Centro médico | `centro@medicita.local` | `Demo-Medicita-2026!` |
+| Administrador | `admin@medicita.local` | `Admin1234!` |
+| Paciente | `paciente@medicita.local` | `Demo12345!` |
+| Centro médico | `centro@medicita.local` | `Demo12345!` |
 
 - El administrador se toma de `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD`. Las cuentas de demo se crean si `SEED_DEMO_USERS=true`, con la contraseña de `DEMO_USERS_PASSWORD`.
 - El seed es idempotente. Si lo vuelves a ejecutar, **restablece** estas tres cuentas: rol original, cuenta activa y contraseña configurada. Es útil entre una demo y otra.

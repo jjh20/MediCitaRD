@@ -1,7 +1,7 @@
 import { isStrongPassword } from './password-policy';
 
 describe('Política de contraseñas', () => {
-  it.each(['Cambiar-Esto-123!', 'Demo-Medicita-2026!', 'Abcdefgh1$'])(
+  it.each(['Admin1234!', 'Demo12345!', 'Abcdefgh1$'])(
     'acepta una contraseña fuerte: %s',
     (password) => expect(isStrongPassword(password)).toBe(true),
   );

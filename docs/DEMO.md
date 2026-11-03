@@ -19,9 +19,9 @@
 
 | Rol | Correo | Contraseña |
 |---|---|---|
-| Administrador | `admin@medicita.local` | `Cambiar-Esto-123!` |
-| Paciente (demo) | `paciente@medicita.local` | `Demo-Medicita-2026!` |
-| Centro médico (demo) | `centro@medicita.local` | `Demo-Medicita-2026!` |
+| Administrador | `admin@medicita.local` | `Admin1234!` |
+| Paciente (demo) | `paciente@medicita.local` | `Demo12345!` |
+| Centro médico (demo) | `centro@medicita.local` | `Demo12345!` |
 | Nueva cuenta (se crea en vivo) | `juan.demo@correo.do` | `Juan-Demo-2026!` |
 
 > Si `juan.demo@correo.do` ya existe de un ensayo anterior, usa otro correo (por ejemplo `juan.demo2@correo.do`).

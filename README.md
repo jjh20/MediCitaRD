@@ -2,6 +2,15 @@
 
 > **Tu salud, nuestra prioridad.**
 
+## Equipo
+
+- Adrián Lebrón
+- Jael Jiménez
+- Manuel Custodio
+- Albery Lara
+
+Universidad APEC (UNAPEC)
+
 MediCita RD es una aplicación web para agendar citas médicas y estudios, pagarlos en línea y darles seguimiento en República Dominicana.
 
 Tiene tres perfiles:
@@ -13,6 +22,20 @@ Tiene tres perfiles:
 | **Administrador** | Gestiona usuarios, roles y permisos, y consulta la auditoría. |
 
 Este repositorio contiene la **Épica 1: Gestión de Usuarios y Accesos**: registro, inicio y cierre de sesión, asignación de roles, restricción por perfil, activación y desactivación de cuentas, y auditoría de las operaciones. Los módulos de citas, búsqueda y pagos aparecen como pantallas provisionales, solo para demostrar la restricción por rol.
+
+## Prototipo
+
+Diseño en Figma: [MediCita RD — prototipo](https://www.figma.com/design/LIxmdAzRlAv0sMpToLae0A/Untitled?node-id=0-1&p=f&t=proTOk7IxQG5IMN4-0)
+
+## Capturas
+
+| Iniciar sesión | Panel del paciente |
+|---|---|
+| ![Pantalla de inicio de sesión](docs/evidencias/05-sin-sesion-redirige-login.png) | ![Panel del paciente con su menú restringido](docs/evidencias/02-menu-paciente.png) |
+| **Acceso denegado (403)** | **Usuarios y roles (administrador)** |
+| ![Pantalla de acceso denegado](docs/evidencias/03-acceso-denegado-403.png) | ![Gestión de usuarios y roles](docs/evidencias/07-rol-cambiado.png) |
+
+Más capturas en [docs/evidencias](docs/evidencias/).
 
 ## Stack
 

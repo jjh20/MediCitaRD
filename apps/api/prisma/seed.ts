@@ -28,7 +28,9 @@ interface SeedAccount {
 
 async function upsertAccount(account: SeedAccount) {
   if (!isStrongPassword(account.password)) {
-    throw new Error(`Contraseña inválida para ${account.email}: ${PASSWORD_POLICY_MESSAGE}`);
+    throw new Error(
+      `Contraseña inválida para ${account.email}: ${PASSWORD_POLICY_MESSAGE}`,
+    );
   }
   const email = account.email.trim().toLowerCase();
   const passwordHash = await bcrypt.hash(account.password, BCRYPT_ROUNDS);

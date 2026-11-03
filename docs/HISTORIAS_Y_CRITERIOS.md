@@ -13,7 +13,7 @@
 | HU-03 | Cierre de sesión | Alta | ✅ Terminada | TC-09, TU-03, TW-05 |
 | HU-04 | Asignación de roles | Alta | ✅ Terminada | TC-15, TC-15b, TC-17 a TC-19, TU-04, TU-08, TW-08, TW-09 |
 | HU-05 | Restricción de funcionalidades según el perfil | Alta | ✅ Terminada | TC-13, TC-14, TW-03, TW-07, TW-12 |
-| HU-06 | Acceso autorizado y no autorizado | Alta | ✅ Terminada | TC-11 a TC-14, TC-21, TW-04, TW-06 |
+| HU-06 | Acceso autorizado y no autorizado | Alta | ✅ Terminada | TC-11 a TC-14b, TC-21, TW-04, TW-06 |
 | HU-07 | Activación y desactivación de usuarios | Alta | ✅ Terminada | TC-10, TC-16, TC-17, TU-05, TW-09 a TW-11 |
 | HU-08 | Auditoría de operaciones | Media | ✅ Terminada | TC-12, TC-13, TC-15, TC-16, TC-20, TC-21, TU-06, TU-07, TW-13 |
 

@@ -118,9 +118,9 @@ npm test
 ```
 
 - **Unitarias (36):** servicios de autenticación, usuarios y auditoría, y la política de contraseñas.
-- **E2E (43):** recorren la API real con supertest contra la base `medicita_test`, que se migra sola. Por seguridad se niegan a correr si `DATABASE_URL_TEST` no apunta a una base de pruebas.
+- **E2E (44):** recorren la API real con supertest contra la base `medicita_test`, que se migra sola. Por seguridad se niegan a correr si `DATABASE_URL_TEST` no apunta a una base de pruebas.
 
-Último resultado: **79 de 79 pruebas aprobadas**. Ver el [plan de pruebas](docs/PLAN_PRUEBAS.md) y la [salida completa](docs/evidencias/npm-test.txt).
+Último resultado: **80 de 80 pruebas aprobadas**. Ver el [plan de pruebas](docs/PLAN_PRUEBAS.md) y la [salida completa](docs/evidencias/npm-test.txt).
 
 ## Seguridad (resumen)
 

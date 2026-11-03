@@ -86,7 +86,7 @@ En la Ventana A → **Auditoría**:
 npm test
 ```
 
-Resultado esperado: **36 unitarias + 43 e2e aprobadas**. Mostrar [PLAN_PRUEBAS.md](PLAN_PRUEBAS.md) y [HISTORIAS_Y_CRITERIOS.md](HISTORIAS_Y_CRITERIOS.md).
+Resultado esperado: **36 unitarias + 44 e2e aprobadas**. Mostrar [PLAN_PRUEBAS.md](PLAN_PRUEBAS.md) y [HISTORIAS_Y_CRITERIOS.md](HISTORIAS_Y_CRITERIOS.md).
 
 ---
 

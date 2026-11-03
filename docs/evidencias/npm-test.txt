@@ -1,4 +1,4 @@
-# Salida de 'npm test' — 2026-11-03 00:40 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
+# Salida de 'npm test' — 2026-11-03 01:17 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
 
 
 > medicita-rd@0.1.0 test
@@ -16,7 +16,7 @@
 Test Suites: 4 passed, 4 total
 Tests:       36 passed, 36 total
 Snapshots:   0 total
-Time:        5.371 s, estimated 6 s
+Time:        8.976 s, estimated 10 s
 Ran all test suites.
 
 > @medicita/api@0.1.0 test:e2e
@@ -24,9 +24,9 @@ Ran all test suites.
 
 
 Test Suites: 2 passed, 2 total
-Tests:       43 passed, 43 total
+Tests:       44 passed, 44 total
 Snapshots:   0 total
-Time:        14.47 s, estimated 18 s
+Time:        21.705 s, estimated 22 s
 Ran all test suites.
 
 Código de salida: 0
@@ -79,7 +79,7 @@ password-policy.spec.ts
   ✔ Política de contraseñas › rechaza una contraseña sin dígito
   ✔ Política de contraseñas › rechaza una contraseña sin símbolo
 
-### Pruebas e2e (jest + supertest, base medicita_test): 43/43 aprobadas
+### Pruebas e2e (jest + supertest, base medicita_test): 44/44 aprobadas
 
 access.e2e-spec.ts
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/users y lo audita
@@ -88,6 +88,7 @@ access.e2e-spec.ts
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/modules/centro y lo audita
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/auth/me y lo audita
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en PATCH /api/users/00000000-0000-4000-8000-000000000000/role y lo audita
+  ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-14b las rutas públicas (salud) responden sin sesión y no se auditan
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a paciente en /api/users y lo audita
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a paciente en /api/audit y lo audita
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-13 responde 403 a paciente en /api/modules/centro y lo audita

@@ -29,9 +29,9 @@ Las e2e aplican las migraciones a `medicita_test` antes de empezar, vacían las 
 | Tipo | Casos (ID) | Pruebas ejecutadas | Aprobadas | Falladas |
 |---|---|---:|---:|---:|
 | Unitarias (`TU-`) | 9 | 36 | 36 | 0 |
-| E2E API (`TC-`) | 21 (+ variantes) | 43 | 43 | 0 |
+| E2E API (`TC-`) | 22 (+ variantes) | 44 | 44 | 0 |
 | Web (`TW-`) | 13 | 13 | 13 | 0 |
-| **Total** | | **92** | **92** | **0** |
+| **Total** | | **93** | **93** | **0** |
 
 Salida completa de `npm test`, con el detalle de cada caso: [evidencias/npm-test.txt](evidencias/npm-test.txt).
 
@@ -58,6 +58,7 @@ Archivos: [apps/api/test/auth.e2e-spec.ts](../apps/api/test/auth.e2e-spec.ts) y 
 | TC-12 | HU-06, HU-08 | Sin cookie: `GET /users`, `/audit`, `/modules/paciente`, `/modules/centro`, `/auth/me` y `PATCH /users/:id/role`. | 401 "Debes iniciar sesión para continuar." y un evento `ACCESS_DENIED_401` con la ruta. | ✅ Aprobado (6/6 rutas). |
 | TC-13 | HU-05, HU-06, HU-08 | Paciente → `/users`, `/audit`, `/modules/centro`; Centro → `/users`, `/audit`, `/modules/paciente`; Admin → `/modules/paciente`, `/modules/centro`. | 403 "Acceso denegado: tu perfil no tiene permiso para este recurso." y `ACCESS_DENIED_403` con el `userId` correcto. | ✅ Aprobado (8/8 combinaciones). |
 | TC-14 | HU-05, HU-06 | Admin → `/users`, `/audit`, `/users/roles`; Paciente → `/modules/paciente`; Centro → `/modules/centro`. | 200. | ✅ Aprobado (5/5). |
+| TC-14b | HU-06 | Sin cookie, `GET /api/health`. | 200 `{status: "ok"}` y ningún evento de auditoría (las rutas `@Public()` no exigen sesión). | ✅ Aprobado. Se agregó tras detectar que el health respondía 401 (ver "Defectos"). |
 | TC-15 | HU-04, HU-08 | El admin hace `PATCH /users/:id/role` (Paciente → Centro médico). Después el paciente usa su sesión vieja y luego vuelve a entrar. | 200 sin `passwordHash`; `ROLE_CHANGED` con actor, IP y detalle "admin@… cambió el rol de paciente@…: Paciente → Centro médico"; sesión vieja → 401; con el nuevo login, `/modules/centro` 200 y `/modules/paciente` 403. | ✅ Aprobado |
 | TC-15b | HU-04 | El admin promueve al centro médico a `ADMIN` y este entra. | 200; el nuevo admin accede a `/users`. | ✅ Aprobado |
 | TC-16 | HU-07, HU-08 | El admin desactiva al paciente; el paciente usa su sesión y luego intenta login; el admin lo reactiva y el paciente vuelve a entrar. | Sesión → 401; login → 403; tras reactivar, login 200; un evento `USER_DEACTIVATED` (con detalle) y uno `USER_ACTIVATED`. | ✅ Aprobado |
@@ -113,3 +114,4 @@ Se ejecutaron el 2026-11-03 contra `npm run dev` (web `:3000`, API `:4000`) con 
 | Al cambiar un filtro de la tabla podía llegar primero una respuesta vieja. | La página se reinicia en el manejador del filtro y se descartan las respuestas que no son la última petición. |
 | `next` quedó instalado sin elevar al workspace y ESLint no lo encontraba. | Reinstalación limpia de dependencias (`npm install`) para que npm lo eleve. |
 | El indicador de desarrollo de Next tapaba "Cerrar sesión" en las capturas. | `devIndicators: false` en `next.config.ts`. |
+| `GET /api/health` respondía 401 porque el guard global de autenticación también se aplicaba a esa ruta. | Se marcó con `@Public()` y se agregó el caso TC-14b. |

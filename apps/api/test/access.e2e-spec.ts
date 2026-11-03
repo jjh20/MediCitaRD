@@ -77,6 +77,12 @@ describe('Roles, permisos y auditoría (e2e)', () => {
       },
     );
 
+    it('TC-14b las rutas públicas (salud) responden sin sesión y no se auditan', async () => {
+      const res = await http().get('/api/health').expect(200);
+      expect(res.body.status).toBe('ok');
+      expect(await ctx.prisma.auditLog.count()).toBe(0);
+    });
+
     it.each([
       ['paciente', '/api/users'],
       ['paciente', '/api/audit'],

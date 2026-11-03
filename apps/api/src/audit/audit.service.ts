@@ -12,7 +12,7 @@ export interface AuditEntry {
 
 export interface AuditQuery {
   action?: AuditAction;
-  /** Coincidencia parcial con el correo o el nombre del usuario */
+  /** Coincidencia parcial con el correo o nombre del usuario, o con el detalle */
   user?: string;
   from?: Date;
   to?: Date;
@@ -52,12 +52,12 @@ export class AuditService {
     const where: Prisma.AuditLogWhereInput = {};
     if (query.action) where.action = query.action;
     if (query.user) {
-      where.user = {
-        OR: [
-          { email: { contains: query.user, mode: 'insensitive' } },
-          { fullName: { contains: query.user, mode: 'insensitive' } },
-        ],
-      };
+      // Coincide con quien hizo la acción o con el usuario afectado (en el detalle)
+      where.OR = [
+        { user: { email: { contains: query.user, mode: 'insensitive' } } },
+        { user: { fullName: { contains: query.user, mode: 'insensitive' } } },
+        { detail: { contains: query.user, mode: 'insensitive' } },
+      ];
     }
     if (query.from || query.to) {
       where.createdAt = { gte: query.from, lte: query.to };

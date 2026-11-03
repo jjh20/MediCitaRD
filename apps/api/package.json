@@ -18,7 +18,7 @@
     "db:reset": "dotenv -e ../../.env -- prisma migrate reset --force --skip-seed",
     "postinstall": "prisma generate",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "jest",
+    "test:unit": "jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "test:cov": "jest --coverage"
   },

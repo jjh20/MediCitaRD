@@ -1,39 +1,43 @@
-# Salida de 'npm test' — 2026-11-03 01:43 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
-
+# Salida de 'npm test' — 2026-11-05 01:27 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
 
 > medicita-rd@0.1.0 test
 > npm run test -w @medicita/api
 
-
 > @medicita/api@0.1.0 test
 > npm run test:unit && npm run test:e2e
-
 
 > @medicita/api@0.1.0 test:unit
 > jest --runInBand
 
-
-Test Suites: 4 passed, 4 total
-Tests:       36 passed, 36 total
-Snapshots:   0 total
-Time:        7.961 s
-Ran all test suites.
-
 > @medicita/api@0.1.0 test:e2e
 > jest --config ./test/jest-e2e.json --runInBand
 
-
-Test Suites: 2 passed, 2 total
-Tests:       44 passed, 44 total
+Test Suites: 7 passed, 7 total
+Tests:       105 passed, 105 total
 Snapshots:   0 total
-Time:        17.751 s, estimated 23 s
+Time:        9.194 s
+Ran all test suites.
+
+Test Suites: 5 passed, 5 total
+Tests:       74 passed, 74 total
+Snapshots:   0 total
+Time:        37.42 s
 Ran all test suites.
 
 Código de salida: 0
 
+Total: 179 de 179 pruebas aprobadas (105 unitarias + 74 e2e).
+
 ## Detalle por caso
 
-### Pruebas unitarias (jest): 36/36 aprobadas
+### Pruebas unitarias (jest): 105/105 aprobadas
+
+audit.service.spec.ts
+  ✔ AuditService › record › guarda acción, usuario, detalle e IP
+  ✔ AuditService › record › permite eventos anónimos y recorta detalles largos
+  ✔ AuditService › record › no rompe la operación si la base de datos falla
+  ✔ AuditService › find › filtra por acción, usuario y rango de fechas, y pagina
+  ✔ AuditService › find › sin filtros consulta todo
 
 auth.service.spec.ts
   ✔ AuthService › register › crea al usuario con la contraseña hasheada y audita REGISTER
@@ -48,12 +52,90 @@ auth.service.spec.ts
   ✔ AuthService › sesión › la cookie es httpOnly, sameSite=lax y secure solo en producción
   ✔ AuthService › sesión › audita el logout solo si el token es válido
 
-audit.service.spec.ts
-  ✔ AuditService › record › guarda acción, usuario, detalle e IP
-  ✔ AuditService › record › permite eventos anónimos y recorta detalles largos
-  ✔ AuditService › record › no rompe la operación si la base de datos falla
-  ✔ AuditService › find › filtra por acción, usuario y rango de fechas, y pagina
-  ✔ AuditService › find › sin filtros consulta todo
+cita-rules.spec.ts
+  ✔ Reglas de negocio de las citas › TU-10 R1 ventana de fechas › acepta una fecha futura dentro de 90 días
+  ✔ Reglas de negocio de las citas › TU-10 R1 ventana de fechas › rechaza el pasado y el momento actual
+  ✔ Reglas de negocio de las citas › TU-10 R1 ventana de fechas › rechaza más de 90 días de anticipación
+  ✔ Reglas de negocio de las citas › TU-11 R2 horario del médico y alineación › acepta turnos alineados dentro del horario (8:00, 8:30… 16:30)
+  ✔ Reglas de negocio de las citas › TU-11 R2 horario del médico y alineación › rechaza un día en que el médico no atiende (sábado)
+  ✔ Reglas de negocio de las citas › TU-11 R2 horario del médico y alineación › rechaza horas fuera del horario (antes de abrir o turno que termina después del cierre)
+  ✔ Reglas de negocio de las citas › TU-11 R2 horario del médico y alineación › rechaza horas no alineadas a la duración (8:15) y con segundos
+  ✔ Reglas de negocio de las citas › TU-11 R2 horario del médico y alineación › interpreta el horario en hora de RD, no en UTC
+  ✔ Reglas de negocio de las citas › TU-12 R5 médico inactivo › rechaza agendar con un médico inactivo
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › permite PENDIENTE → CONFIRMADA
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › permite PENDIENTE → CANCELADA
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › permite CONFIRMADA → ATENDIDA
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › permite CONFIRMADA → NO_ASISTIO
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › permite CONFIRMADA → CANCELADA
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza PENDIENTE → PENDIENTE con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza PENDIENTE → ATENDIDA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza PENDIENTE → NO_ASISTIO con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza CONFIRMADA → PENDIENTE con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza CONFIRMADA → CONFIRMADA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza ATENDIDA → PENDIENTE con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza ATENDIDA → CONFIRMADA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza ATENDIDA → ATENDIDA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza ATENDIDA → NO_ASISTIO con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza ATENDIDA → CANCELADA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza NO_ASISTIO → PENDIENTE con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza NO_ASISTIO → CONFIRMADA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza NO_ASISTIO → ATENDIDA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza NO_ASISTIO → NO_ASISTIO con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza NO_ASISTIO → CANCELADA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza CANCELADA → PENDIENTE con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza CANCELADA → CONFIRMADA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza CANCELADA → ATENDIDA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza CANCELADA → NO_ASISTIO con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › rechaza CANCELADA → CANCELADA con 409
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › la matriz declarada coincide con las transiciones permitidas
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › explica que una pendiente debe confirmarse antes de cerrarse
+  ✔ Reglas de negocio de las citas › TU-13 R6 transiciones de estado › reprogramar solo en PENDIENTE o CONFIRMADA
+  ✔ Reglas de negocio de las citas › TU-14 R7 cita cerrada no se modifica › rechaza modificar una cita ATENDIDA (409)
+  ✔ Reglas de negocio de las citas › TU-14 R7 cita cerrada no se modifica › rechaza modificar una cita NO_ASISTIO (409)
+  ✔ Reglas de negocio de las citas › TU-14 R7 cita cerrada no se modifica › rechaza modificar una cita CANCELADA (409)
+  ✔ Reglas de negocio de las citas › TU-14 R7 cita cerrada no se modifica › permite modificar citas activas
+  ✔ Reglas de negocio de las citas › TU-15 R8 cancelación › exige motivo (vacío o solo espacios)
+  ✔ Reglas de negocio de las citas › TU-15 R8 cancelación › el paciente puede cancelar con 2 horas o más de anticipación
+  ✔ Reglas de negocio de las citas › TU-15 R8 cancelación › el paciente no puede cancelar con menos de 2 horas
+  ✔ Reglas de negocio de las citas › TU-15 R8 cancelación › el centro sí puede cancelar con menos de 2 horas
+  ✔ Reglas de negocio de las citas › TU-16 R9 cierre › ATENDIDA exige notas de cierre
+  ✔ Reglas de negocio de las citas › TU-16 R9 cierre › NO_ASISTIO no exige notas
+  ✔ Reglas de negocio de las citas › TU-16 R9 cierre › no se puede cerrar antes de la hora de la cita
+
+citas.service.spec.ts
+  ✔ CitasService › crear › TU-17 crea la cita PENDIENTE, copia el precio y escribe el historial en la misma transacción serializable
+  ✔ CitasService › crear › TU-18 R3 rechaza si el médico ya tiene una cita activa a esa hora (409)
+  ✔ CitasService › crear › TU-19 R4 rechaza si el paciente ya tiene otra cita activa a esa hora (409)
+  ✔ CitasService › crear › TU-20 R5 rechaza un médico inactivo (400)
+  ✔ CitasService › crear › TU-20b R1 rechaza el pasado antes de abrir la transacción
+  ✔ CitasService › crear › TU-21 R10 convierte una reserva simultánea (P2002) en 409
+  ✔ CitasService › crear › TU-21 R10 convierte una reserva simultánea (P2034) en 409
+  ✔ CitasService › operaciones sobre una cita › TU-22 un paciente que no es el dueño recibe 403 y queda auditado
+  ✔ CitasService › operaciones sobre una cita › TU-22b un centro que no es el de la cita recibe 403
+  ✔ CitasService › operaciones sobre una cita › TU-23 confirmar actualiza con bloqueo optimista y registra el historial en la misma transacción
+  ✔ CitasService › operaciones sobre una cita › TU-24 R10 si otra persona modificó la cita al mismo tiempo responde 409
+  ✔ CitasService › operaciones sobre una cita › TU-25 reprogramar una cita CONFIRMADA la deja PENDIENTE y guarda el cambio de fecha
+  ✔ CitasService › operaciones sobre una cita › TU-26 R7 no se puede editar una cita cerrada (409)
+  ✔ CitasService › operaciones sobre una cita › TU-27 el historial de un PATCH guarda campo: {antes, despues}
+  ✔ CitasService › operaciones sobre una cita › TU-27b un PATCH sin cambios reales responde 400
+
+password-policy.spec.ts
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Admin1234!
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Demo12345!
+  ✔ Política de contraseñas › acepta una contraseña fuerte: Abcdefgh1$
+  ✔ Política de contraseñas › rechaza una contraseña muy corta
+  ✔ Política de contraseñas › rechaza una contraseña sin mayúscula
+  ✔ Política de contraseñas › rechaza una contraseña sin minúscula
+  ✔ Política de contraseñas › rechaza una contraseña sin dígito
+  ✔ Política de contraseñas › rechaza una contraseña sin símbolo
+
+reportes.service.spec.ts
+  ✔ ReportesService › TU-28 calcula totales por estado, tasas e ingresos de citas atendidas
+  ✔ ReportesService › TU-29 agrupa por médico y por día en hora de RD, con los días vacíos del rango
+  ✔ ReportesService › TU-30 el centro solo ve su propio centro aunque pida otro
+  ✔ ReportesService › TU-31 sin citas las tasas son N/D (null)
+  ✔ ReportesService › TU-32 rechaza un rango invertido
+  ✔ ReportesService › TU-33 genera el CSV con BOM, secciones y celdas escapadas
 
 users.service.spec.ts
   ✔ UsersService › changeRole › cambia el rol y lo audita con el actor y el detalle
@@ -69,17 +151,7 @@ users.service.spec.ts
   ✔ UsersService › setActive › rechaza un cambio sin efecto (ya estaba activo)
   ✔ UsersService › expone el catálogo de roles con permisos
 
-password-policy.spec.ts
-  ✔ Política de contraseñas › acepta una contraseña fuerte: Admin1234!
-  ✔ Política de contraseñas › acepta una contraseña fuerte: Demo12345!
-  ✔ Política de contraseñas › acepta una contraseña fuerte: Abcdefgh1$
-  ✔ Política de contraseñas › rechaza una contraseña muy corta
-  ✔ Política de contraseñas › rechaza una contraseña sin mayúscula
-  ✔ Política de contraseñas › rechaza una contraseña sin minúscula
-  ✔ Política de contraseñas › rechaza una contraseña sin dígito
-  ✔ Política de contraseñas › rechaza una contraseña sin símbolo
-
-### Pruebas e2e (jest + supertest, base medicita_test): 44/44 aprobadas
+### Pruebas e2e (jest + supertest): 74/74 aprobadas
 
 access.e2e-spec.ts
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/users y lo audita
@@ -128,3 +200,39 @@ auth.e2e-spec.ts
   ✔ Autenticación (e2e) › HU-02 Inicio de sesión › TC-10 un usuario desactivado no puede iniciar sesión
   ✔ Autenticación (e2e) › HU-02 Inicio de sesión › TC-11 rechaza un token alterado
   ✔ Autenticación (e2e) › HU-03 Cierre de sesión › TC-09 cierra la sesión, borra la cookie y audita LOGOUT
+
+citas.e2e-spec.ts
+  ✔ Citas: gestión operativa (e2e) › HU-10 Agendar una cita › TC-28 el paciente agenda: 201, código CIT-0001, PENDIENTE, costo copiado e historial CREADA
+  ✔ Citas: gestión operativa (e2e) › HU-10 Agendar una cita › TC-28b solo el paciente agenda: admin y centro reciben 403
+  ✔ Citas: gestión operativa (e2e) › HU-10 Agendar una cita › TC-37 R1, R2 y R5 se validan con mensajes claros (400)
+  ✔ Citas: gestión operativa (e2e) › HU-10 Agendar una cita › TC-36 409 por horario ocupado: del médico (R3) y del paciente (R4)
+  ✔ Citas: gestión operativa (e2e) › HU-10 Agendar una cita › TC-36b una cita cancelada libera el horario
+  ✔ Citas: gestión operativa (e2e) › HU-10 Agendar una cita › TC-38 R10 dos reservas simultáneas del mismo horario: una 201 y otra 409
+  ✔ Citas: gestión operativa (e2e) › HU-11 Consultar citas y acceso por rol › TC-29 la cita la ven su paciente, su centro y el admin; ajenos reciben 403 auditado
+  ✔ Citas: gestión operativa (e2e) › HU-11 Consultar citas y acceso por rol › TC-29b 404 para una cita inexistente y 401 sin sesión
+  ✔ Citas: gestión operativa (e2e) › HU-11 Consultar citas y acceso por rol › TC-39 filtros por estado, fecha y responsable (médico o centro), con alcance por rol
+  ✔ Citas: gestión operativa (e2e) › HU-12 Actualizar y reprogramar › TC-30 PATCH actualiza motivo y tipo y guarda {antes, despues} en el historial
+  ✔ Citas: gestión operativa (e2e) › HU-12 Actualizar y reprogramar › TC-31 reprogramar una cita confirmada la vuelve PENDIENTE; a un horario ocupado responde 409
+  ✔ Citas: gestión operativa (e2e) › HU-13 Confirmar, cerrar y cancelar › TC-32 solo el centro confirma (el paciente recibe 403)
+  ✔ Citas: gestión operativa (e2e) › HU-13 Confirmar, cerrar y cancelar › TC-33 cerrar: ATENDIDA exige notas y solo después de la hora; NO_ASISTIO sin notas
+  ✔ Citas: gestión operativa (e2e) › HU-13 Confirmar, cerrar y cancelar › TC-34 cancelar: exige motivo; el paciente solo hasta 2 horas antes; el centro siempre
+  ✔ Citas: gestión operativa (e2e) › HU-13 Confirmar, cerrar y cancelar › TC-35 transiciones inválidas y citas cerradas responden 409
+  ✔ Citas: gestión operativa (e2e) › HU-14 Historial de cambios › TC-40 registra el historial completo y en orden, con actor y estados
+  ✔ Citas: gestión operativa (e2e) › HU-14 Historial de cambios › TC-40b si una regla falla no se escribe historial (misma transacción)
+
+medicos.e2e-spec.ts
+  ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-23 el centro crea un médico (201), queda asociado a su centro y se audita
+  ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-23b el paciente no puede crear médicos (403)
+  ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-24 valida el horario y los datos con mensajes claros (400)
+  ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-25 el centro edita su médico; otro centro recibe 403 auditado
+  ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-26 activar y desactivar: el paciente deja de ver al médico inactivo
+  ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-26b cualquier usuario autenticado busca por especialidad; el centro ve solo los suyos
+  ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-27 la disponibilidad marca los turnos ocupados y los días sin atención
+
+reportes.e2e-spec.ts
+  ✔ Reporte de operaciones (e2e) › HU-15 Reporte básico de operaciones › TC-41 el admin obtiene totales por estado, tasas e ingresos correctos
+  ✔ Reporte de operaciones (e2e) › HU-15 Reporte básico de operaciones › TC-41b agrupa por médico y por día (con los días sin citas)
+  ✔ Reporte de operaciones (e2e) › HU-15 Reporte básico de operaciones › TC-41c filtra por centro y por médico (responsable)
+  ✔ Reporte de operaciones (e2e) › HU-15 Reporte básico de operaciones › TC-41d el centro solo ve el reporte de su centro; el paciente recibe 403
+  ✔ Reporte de operaciones (e2e) › HU-15 Reporte básico de operaciones › TC-41e valida el rango de fechas
+  ✔ Reporte de operaciones (e2e) › HU-15 Reporte básico de operaciones › TC-42 descarga el CSV con los totales y el detalle

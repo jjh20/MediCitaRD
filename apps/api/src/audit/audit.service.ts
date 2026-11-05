@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type { AuthUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditAction } from './audit-actions';
 
@@ -46,6 +47,25 @@ export class AuditService {
         error instanceof Error ? error.stack : String(error),
       );
     }
+  }
+
+  /**
+   * Registra un 403 por intentar acceder a un recurso de otro usuario
+   * (cita o médico ajeno) y devuelve la excepción para lanzarla.
+   */
+  async forbidden(
+    actor: AuthUser,
+    recurso: string,
+    message: string,
+    ip: string | null,
+  ): Promise<ForbiddenException> {
+    await this.record({
+      action: AuditAction.ACCESS_DENIED_403,
+      userId: actor.id,
+      detail: `${actor.email} (${actor.role}) intentó acceder sin permiso a ${recurso}`,
+      ip,
+    });
+    return new ForbiddenException(message);
   }
 
   async find(query: AuditQuery) {

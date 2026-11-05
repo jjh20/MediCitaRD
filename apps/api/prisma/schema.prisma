@@ -1,4 +1,5 @@
-// Modelo de datos de MediCita RD — Épica 1: usuarios, roles y auditoría
+// Modelo de datos de MediCita RD
+// Épica 1: usuarios, roles y auditoría · Épica 2: médicos, citas e historial
 
 generator client {
   provider = "prisma-client-js"
@@ -26,6 +27,12 @@ model User {
   updatedAt    DateTime   @updatedAt
   auditLogs    AuditLog[]
 
+  // Épica 2
+  medicos        Medico[]        @relation("CentroMedicos")
+  citasPaciente  Cita[]          @relation("CitasPaciente")
+  citasCentro    Cita[]          @relation("CitasCentro")
+  cambiosDeCitas CitaHistorial[]
+
   @@index([role])
 }
 
@@ -41,4 +48,103 @@ model AuditLog {
   @@index([action])
   @@index([userId])
   @@index([createdAt])
+}
+
+// ─── Épica 2: Gestión Operativa (citas) ──────────────────────────────
+
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  ATENDIDA
+  NO_ASISTIO
+  CANCELADA
+}
+
+enum TipoCita {
+  CONSULTA
+  ESTUDIO
+}
+
+enum AccionCita {
+  CREADA
+  ACTUALIZADA
+  REPROGRAMADA
+  CONFIRMADA
+  CERRADA
+  CANCELADA
+}
+
+/// Médico publicado por un centro (usuario con rol CENTRO_MEDICO).
+/// El horario se interpreta en hora de República Dominicana (UTC−4).
+model Medico {
+  id             String   @id @default(uuid())
+  centroId       String
+  centro         User     @relation("CentroMedicos", fields: [centroId], references: [id], onDelete: Restrict)
+  nombre         String   @db.VarChar(120)
+  especialidad   String   @db.VarChar(80)
+  /// Precio de la consulta en pesos dominicanos (DOP)
+  precioConsulta Decimal  @db.Decimal(10, 2)
+  duracionMin    Int      @default(30)
+  /// Días de atención: 1 = lunes … 7 = domingo
+  diasSemana     Int[]
+  /// "HH:mm" (hora local de RD)
+  horaInicio     String   @db.VarChar(5)
+  horaFin        String   @db.VarChar(5)
+  activo         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  citas          Cita[]
+
+  @@index([centroId])
+  @@index([especialidad])
+}
+
+/// La "operación" de MediCita RD.
+/// Índices únicos parciales (en la migración SQL, Prisma no los modela):
+/// un médico y un paciente no pueden tener dos citas activas a la misma hora.
+model Cita {
+  id                String          @id @default(uuid())
+  /// CIT-0001, CIT-0002… (lo genera la base con una secuencia)
+  codigo            String          @unique @default(dbgenerated("('CIT-'::text || lpad((nextval('\"Cita_codigo_seq\"'::regclass))::text, 4, '0'::text))")) @db.VarChar(20)
+  pacienteId        String
+  paciente          User            @relation("CitasPaciente", fields: [pacienteId], references: [id], onDelete: Restrict)
+  medicoId          String
+  medico            Medico          @relation(fields: [medicoId], references: [id], onDelete: Restrict)
+  centroId          String
+  centro            User            @relation("CitasCentro", fields: [centroId], references: [id], onDelete: Restrict)
+  fechaHora         DateTime
+  tipo              TipoCita        @default(CONSULTA)
+  motivo            String          @db.VarChar(500)
+  estado            EstadoCita      @default(PENDIENTE)
+  /// Copia del precio del médico al crear la cita (DOP)
+  costo             Decimal         @db.Decimal(10, 2)
+  notasCierre       String?         @db.VarChar(1000)
+  motivoCancelacion String?         @db.VarChar(500)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  historial         CitaHistorial[]
+
+  @@index([estado])
+  @@index([fechaHora])
+  @@index([medicoId])
+  @@index([centroId])
+  @@index([pacienteId])
+}
+
+/// Historial de cambios de una cita (se escribe en la misma transacción).
+model CitaHistorial {
+  id             String      @id @default(uuid())
+  citaId         String
+  cita           Cita        @relation(fields: [citaId], references: [id], onDelete: Cascade)
+  usuarioId      String?
+  usuario        User?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  accion         AccionCita
+  estadoAnterior EstadoCita?
+  estadoNuevo    EstadoCita?
+  /// { campo: { antes, despues } }
+  cambios        Json?
+  comentario     String?     @db.VarChar(1000)
+  createdAt      DateTime    @default(now())
+
+  @@index([citaId, createdAt])
 }

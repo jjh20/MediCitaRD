@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  BarChart3,
   Calendar,
   CalendarClock,
+  ClipboardList,
   CreditCard,
   Menu,
   ScrollText,
@@ -36,6 +38,8 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   stethoscope: Stethoscope,
   users: Users,
   "scroll-text": ScrollText,
+  clipboard: ClipboardList,
+  chart: BarChart3,
 };
 
 interface ShellUser {
@@ -110,14 +114,14 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr] print:block">
       {/* Barra lateral fija en escritorio */}
-      <aside className="sticky top-0 hidden h-dvh bg-sidebar lg:block">
+      <aside className="sticky top-0 hidden h-dvh bg-sidebar lg:block print:hidden">
         <SidebarContent user={user} />
       </aside>
 
       {/* Barra superior con menú desplegable en celular */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-white/95 px-4 py-3 backdrop-blur lg:hidden print:hidden">
         <Logo size="sm" />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -135,7 +139,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
         </Sheet>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-10 print:max-w-none print:p-0">
         {children}
       </main>
     </div>

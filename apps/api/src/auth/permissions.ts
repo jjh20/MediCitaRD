@@ -13,8 +13,13 @@ export const ROLE_LABELS: Record<Role, string> = {
  */
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   PACIENTE: ['citas:ver', 'medicos:buscar', 'pagos:ver'],
-  CENTRO_MEDICO: ['agenda:gestionar', 'medicos:gestionar'],
-  ADMIN: ['usuarios:gestionar', 'auditoria:ver'],
+  CENTRO_MEDICO: ['agenda:gestionar', 'medicos:gestionar', 'reportes:ver'],
+  ADMIN: [
+    'usuarios:gestionar',
+    'auditoria:ver',
+    'operaciones:ver',
+    'reportes:ver',
+  ],
 };
 
 /** Roles que se pueden elegir en el registro público (nunca ADMIN). */

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AUTH_COOKIE } from "./session";
 import type { Role } from "./roles";
 
@@ -30,6 +30,7 @@ export async function apiServer<T>(path: string): Promise<T> {
   });
   if (res.status === 401) redirect("/sesion/expirada");
   if (res.status === 403) redirect(`/acceso-denegado`);
+  if (res.status === 404) notFound();
   if (!res.ok) throw new Error(`La API respondió ${res.status} en ${path}`);
   return (await res.json()) as T;
 }

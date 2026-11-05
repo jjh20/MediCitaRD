@@ -17,11 +17,26 @@ Tiene tres perfiles:
 
 | Rol | Qué hace |
 |---|---|
-| **Paciente** (usuario principal) | Busca médicos, agenda, paga y ve sus citas. |
-| **Centro médico** | Publica médicos, horarios y precios, y gestiona sus citas. |
-| **Administrador** | Gestiona usuarios, roles y permisos, y consulta la auditoría. |
+| **Paciente** (usuario principal) | Busca médicos, agenda, reprograma o cancela, y ve sus citas con su historial. |
+| **Centro médico** | Publica médicos, horarios y precios; gestiona su agenda (confirma, reprograma, cierra y cancela) y ve el reporte de su centro. |
+| **Administrador** | Gestiona usuarios, roles y permisos; consulta todas las citas (Operaciones), el reporte global y la auditoría. |
 
-Este repositorio contiene la **Épica 1: Gestión de Usuarios y Accesos**: registro, inicio y cierre de sesión, asignación de roles, restricción por perfil, activación y desactivación de cuentas, y auditoría de las operaciones. Los módulos de citas, búsqueda y pagos aparecen como pantallas provisionales, solo para demostrar la restricción por rol.
+Este repositorio contiene:
+
+- **Épica 1: Gestión de Usuarios y Accesos.** Registro, inicio y cierre de sesión, asignación de roles, restricción por perfil, activación y desactivación de cuentas, y auditoría de las operaciones.
+- **Épica 2: Gestión Operativa (citas médicas).** Médicos y horarios del centro; búsqueda por especialidad; agendar en turnos libres; consultar, actualizar, reprogramar, confirmar, cerrar y cancelar citas con reglas de negocio (R1 a R10); filtros por estado, fecha y responsable; historial de cambios, y reporte de operaciones con descarga CSV.
+
+El módulo de pagos sigue como pantalla provisional.
+
+## Pantallas
+
+| Rol | Pantallas |
+|---|---|
+| Paciente | **Mis citas** (Próximas e Historial) → detalle con historial, reprogramar, editar y cancelar · **Buscar médico** (por especialidad) → perfil → fecha y hora libres → confirmación con resumen y costo · Pagos (provisional) |
+| Centro médico | **Agenda del centro** (filtros por estado, fechas y médico) → detalle con confirmar, reprogramar, cerrar, cancelar y línea de tiempo · **Médicos y horarios** (agregar, editar, activar y desactivar) · **Reportes** (solo su centro) |
+| Administrador | **Usuarios y roles** · **Operaciones** (todas las citas con filtros por estado, fecha, centro y médico) · **Reportes** (tarjetas, gráficos, tabla por médico, CSV y vista imprimible) · **Auditoría** |
+
+El guion de la demo de cada épica está en [docs/DEMO.md](docs/DEMO.md).
 
 ## Prototipo
 
@@ -34,6 +49,10 @@ Diseño en Figma: [MediCita RD — prototipo](https://www.figma.com/design/LIxmd
 | ![Pantalla de inicio de sesión](docs/evidencias/05-sin-sesion-redirige-login.png) | ![Panel del paciente con su menú restringido](docs/evidencias/02-menu-paciente.png) |
 | **Acceso denegado (403)** | **Usuarios y roles (administrador)** |
 | ![Pantalla de acceso denegado](docs/evidencias/03-acceso-denegado-403.png) | ![Gestión de usuarios y roles](docs/evidencias/07-rol-cambiado.png) |
+| **Agendar cita (paciente)** | **Detalle e historial de la cita (centro)** |
+| ![Perfil del médico con los turnos libres](docs/evidencias/16-perfil-medico-horarios.png) | ![Cita cerrada con su línea de tiempo](docs/evidencias/26-cita-cerrada-historial.png) |
+| **Agenda del centro** | **Reporte de operaciones (administrador)** |
+| ![Agenda del centro con filtros](docs/evidencias/23-agenda-centro.png) | ![Reporte con tarjetas, gráficos y tabla por médico](docs/evidencias/31-reportes-admin.png) |
 
 Más capturas en [docs/evidencias](docs/evidencias/).
 
@@ -85,11 +104,15 @@ El seed (`npm run db:seed`) crea estas cuentas:
 | Rol | Correo | Contraseña |
 |---|---|---|
 | Administrador | `admin@medicita.local` | `Admin1234!` |
-| Paciente | `paciente@medicita.local` | `Demo12345!` |
-| Centro médico | `centro@medicita.local` | `Demo12345!` |
+| Paciente | `paciente@medicita.local` (María Pérez) | `Demo12345!` |
+| Paciente | `paciente2@medicita.local`, `paciente3@medicita.local` | `Demo12345!` |
+| Centro médico | `centro@medicita.local` (Centro Médico Esperanza) | `Demo12345!` |
+| Centro médico | `centro2@medicita.local` (Clínica Santo Domingo) | `Demo12345!` |
+
+Además crea los **médicos de demo** (Medicina General RD$1,500, Cardiología RD$2,500 y Pediatría RD$1,800 en el Centro Médico Esperanza, y Dermatología RD$2,000 en la Clínica Santo Domingo; todos de lunes a viernes, de 8:00 a 17:00) y **20 citas** repartidas en las últimas 2 semanas y las próximas 2, con todos los estados y su historial.
 
 - El administrador se toma de `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD`. Las cuentas de demo se crean si `SEED_DEMO_USERS=true`, con la contraseña de `DEMO_USERS_PASSWORD`.
-- El seed es idempotente. Si lo vuelves a ejecutar, **restablece** estas tres cuentas: rol original, cuenta activa y contraseña configurada. Es útil entre una demo y otra.
+- El seed es idempotente. Si lo vuelves a ejecutar, **restablece** estas cuentas (rol original, cuenta activa y contraseña configurada) y los médicos de demo, y **vuelve a generar sus citas** con fechas relativas a hoy (las citas de los médicos de demo, incluidas las creadas a mano, se reemplazan). Es útil entre una demo y otra.
 - **Son credenciales de demostración.** Cámbialas fuera de un entorno local.
 
 ### Crear más usuarios de prueba
@@ -110,7 +133,7 @@ Para tener un administrador adicional, el admin le cambia el rol a un usuario de
 | `npm run setup` | Ejecuta `db:up`, `db:migrate` y `db:seed`. |
 | `npm run db:up` / `db:down` | Levanta o detiene el contenedor de PostgreSQL. |
 | `npm run db:migrate` | Aplica las migraciones de Prisma (`migrate deploy`). |
-| `npm run db:seed` | Crea o restablece el admin y las cuentas de demo. |
+| `npm run db:seed` | Crea o restablece el admin, las cuentas de demo, los médicos y las citas de demo. |
 | `npm run db:reset` | **Borra todos los datos** de la base de desarrollo y vuelve a aplicar las migraciones. Después ejecuta `npm run db:seed`. |
 | `npm run build` / `npm start` | Compila y arranca en modo producción. |
 | `npm run lint` | Ejecuta ESLint en la API y en la web. |
@@ -131,7 +154,7 @@ Todas viven en un único `.env` en la raíz (ver [.env.example](.env.example)). 
 | `INTERNAL_API_KEY` | Clave que el middleware de Next envía a `POST /api/audit/access-denied`. |
 | `API_INTERNAL_URL` | URL de la API vista desde Next (proxy `/api/*` y llamadas del servidor). |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | Administrador inicial que crea el seed. |
-| `SEED_DEMO_USERS`, `DEMO_USERS_PASSWORD` | Cuentas de demo de paciente y centro médico. |
+| `SEED_DEMO_USERS`, `DEMO_USERS_PASSWORD` | Cuentas de demo (pacientes y centros médicos), con sus médicos y citas. |
 
 ## Pruebas
 
@@ -140,10 +163,10 @@ npm run db:up   # si PostgreSQL no está corriendo
 npm test
 ```
 
-- **Unitarias (36):** servicios de autenticación, usuarios y auditoría, y la política de contraseñas.
-- **E2E (44):** recorren la API real con supertest contra la base `medicita_test`, que se migra sola. Por seguridad se niegan a correr si `DATABASE_URL_TEST` no apunta a una base de pruebas.
+- **Unitarias (105):** servicios de autenticación, usuarios y auditoría, y la política de contraseñas (Épica 1); reglas de negocio R1 a R10, transiciones de estado, servicio de citas y reporte (Épica 2).
+- **E2E (74):** recorren la API real con supertest contra la base `medicita_test`, que se migra sola. Cubren auth y acceso (Épica 1), y médicos, citas, historial, filtros y reportes (Épica 2). Por seguridad se niegan a correr si `DATABASE_URL_TEST` no apunta a una base de pruebas.
 
-Último resultado: **80 de 80 pruebas aprobadas**. Ver el [plan de pruebas](docs/PLAN_PRUEBAS.md) y la [salida completa](docs/evidencias/npm-test.txt).
+Último resultado: **179 de 179 pruebas aprobadas**. Ver el [plan de pruebas](docs/PLAN_PRUEBAS.md) y la [salida completa](docs/evidencias/npm-test.txt).
 
 ## Seguridad (resumen)
 
@@ -155,7 +178,9 @@ npm test
 - El middleware de Next.js protege las páginas por rol: sin sesión redirige al login (401) y con un rol incorrecto muestra "Acceso denegado" (403).
 - Se auditan el registro, el login correcto y fallido, el logout, el cambio de rol, la activación y desactivación, y los accesos denegados 401 y 403, tanto en la API como en la web.
 
-**Fuera del alcance de esta épica:** bloqueo por intentos fallidos, verificación de correo, recuperación de contraseña, MFA, revocación de tokens en el servidor y despliegue público.
+- Cada cita solo la ven su paciente, su centro y el admin; cualquier otro acceso responde 403 y se audita. Las reglas de negocio se validan en la API (nunca solo en la web) y dos reservas simultáneas no pueden tomar el mismo turno.
+
+**Fuera del alcance:** pagos en línea, notificaciones, bloqueo por intentos fallidos, verificación de correo, recuperación de contraseña, MFA, revocación de tokens en el servidor y despliegue público.
 
 ## Estructura
 
@@ -164,13 +189,13 @@ npm test
 ├── apps/
 │   ├── api/                 # NestJS + Prisma
 │   │   ├── prisma/          # schema.prisma, migraciones y seed
-│   │   ├── src/             # auth, users, audit, modules, prisma, common
+│   │   ├── src/             # auth, users, audit, modules, prisma, common, medicos, citas, reportes
 │   │   └── test/            # pruebas e2e (supertest)
 │   └── web/                 # Next.js (App Router)
 │       └── src/
 │           ├── app/         # páginas públicas, (auth) y (app) por rol
-│           ├── components/  # marca, layout, formularios y shadcn/ui
-│           ├── lib/         # roles, sesión, clientes de API
+│           ├── components/  # marca, layout, formularios, citas, reportes y shadcn/ui
+│           ├── lib/         # roles, sesión, clientes de API, citas (tipos y formato)
 │           └── middleware.ts
 ├── docker/postgres/init/    # crea la base medicita_test
 ├── docs/                    # historias, plan de pruebas, demo, arquitectura y evidencias
@@ -194,4 +219,5 @@ npm test
 | El puerto 5432 está ocupado | En `.env` cambia `POSTGRES_PORT` (por ejemplo a `5433`) **y** el puerto en `DATABASE_URL` y `DATABASE_URL_TEST`, y luego ejecuta `npm run db:up`. |
 | La API no arranca: "Faltan variables de entorno" | Falta el `.env` en la raíz: `cp .env.example .env`. |
 | Iniciaste sesión, pero te devuelve al login con "Tu sesión ya no es válida" | Un administrador te cambió el rol o desactivó tu cuenta. Vuelve a iniciar sesión. |
+| Errores 500 en médicos o citas después de actualizar el código | Falta aplicar la migración de la Épica 2: `npm run db:migrate` y luego `npm run db:seed`. |
 | Quiero empezar con la base limpia | `npm run db:reset` y luego `npm run db:seed`. **Borra todos los datos de desarrollo.** |

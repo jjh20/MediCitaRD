@@ -1,4 +1,9 @@
-# Guion de la demo en vivo: Épica 1 (8 a 10 minutos)
+# Guion de la demo en vivo
+
+- [Épica 1: Gestión de usuarios y accesos](#épica-1-gestión-de-usuarios-y-accesos-8-a-10-minutos) (8 a 10 minutos)
+- [Épica 2: Gestión Operativa (citas)](#épica-2-gestión-operativa-citas-10-a-12-minutos) (10 a 12 minutos)
+
+# Épica 1: Gestión de usuarios y accesos (8 a 10 minutos)
 
 ## Antes de empezar (5 minutos antes)
 
@@ -48,9 +53,9 @@ Abrir <http://localhost:3000>. *"MediCita RD: Tu salud, nuestra prioridad. Esta 
 
 ## 3. Restricción de funcionalidades según el perfil (1 min)
 
-1. Ventana B (paciente): el menú muestra solo **Mis citas, Buscar médico y Pagos**. Al pie de cada página: *"Acceso verificado por la API: módulo Paciente…"*. La API también valida el rol.
-2. Cerrar sesión y entrar como `centro@medicita.local` → solo **Agenda del centro y Médicos y horarios**.
-3. Ventana A: entrar como `admin@medicita.local` → solo **Usuarios y roles y Auditoría**.
+1. Ventana B (paciente): el menú muestra solo **Mis citas, Buscar médico y Pagos**. Al pie de **Pagos** (módulo provisional): *"Acceso verificado por la API: módulo Paciente…"*. La API también valida el rol.
+2. Cerrar sesión y entrar como `centro@medicita.local` → solo **Agenda del centro, Médicos y horarios y Reportes**.
+3. Ventana A: entrar como `admin@medicita.local` → solo **Usuarios y roles, Operaciones, Reportes y Auditoría**.
 4. *(Opcional)* Reducir la ventana o usar las herramientas de desarrollo en modo celular: el menú pasa a un botón ☰.
 
 ## 4. Acceso autorizado y no autorizado (1,5 min)
@@ -86,7 +91,7 @@ En la Ventana A → **Auditoría**:
 npm test
 ```
 
-Resultado esperado: **36 unitarias + 44 e2e aprobadas**. Mostrar [PLAN_PRUEBAS.md](PLAN_PRUEBAS.md) y [HISTORIAS_Y_CRITERIOS.md](HISTORIAS_Y_CRITERIOS.md).
+Resultado esperado: **105 unitarias + 74 e2e aprobadas** (las 80 de la Épica 1 incluidas). Mostrar [PLAN_PRUEBAS.md](PLAN_PRUEBAS.md) y [HISTORIAS_Y_CRITERIOS.md](HISTORIAS_Y_CRITERIOS.md).
 
 ---
 
@@ -116,5 +121,140 @@ Resultado esperado: **36 unitarias + 44 e2e aprobadas**. Mostrar [PLAN_PRUEBAS.m
 | [11-usuario-desactivado.png](evidencias/11-usuario-desactivado.png) | Usuario desactivado que no puede entrar. |
 | [12-movil-centro.png](evidencias/12-movil-centro.png) / [13-movil-menu-centro.png](evidencias/13-movil-menu-centro.png) | Vista de celular y menú del centro médico. |
 | [npm-test.txt](evidencias/npm-test.txt) | Salida completa de `npm test`. |
+
+> Nunca mostrar ni capturar el archivo `.env`, cookies ni tokens.
+
+---
+
+# Épica 2: Gestión Operativa (citas) (10 a 12 minutos)
+
+La "operación" de MediCita RD es la **cita médica**. Esta parte demuestra los 5 puntos pedidos: (1) crear, consultar, actualizar y cerrar citas; (2) validar las reglas de negocio; (3) consultar por estado, fecha o responsable; (4) el historial de cambios y (5) el reporte básico.
+
+## Antes de empezar (5 minutos antes)
+
+1. Docker Desktop en verde y, en la raíz del proyecto:
+   ```bash
+   npm run db:up
+   npm run db:migrate   # aplica la migración de la Épica 2 si aún no está
+   npm run db:seed      # restablece cuentas, médicos y las 20 citas de demo (fechas relativas a hoy)
+   npm run dev
+   ```
+   El seed **borra y vuelve a crear** las citas de los médicos de demo, así que cada ensayo empieza igual (códigos desde `CIT-0001`).
+2. Preparar **tres sesiones** que no se mezclen: **A** (ventana normal, admin), **B** (incógnito, paciente) y **C** (otro navegador u otro perfil, centro médico).
+
+### Credenciales
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador | `admin@medicita.local` | `Admin1234!` |
+| Paciente (María Pérez) | `paciente@medicita.local` | `Demo12345!` |
+| Pacientes extra | `paciente2@medicita.local`, `paciente3@medicita.local` | `Demo12345!` |
+| Centro Médico Esperanza | `centro@medicita.local` | `Demo12345!` |
+| Clínica Santo Domingo (2.º centro) | `centro2@medicita.local` | `Demo12345!` |
+
+### Datos que deja el seed
+
+- **Centro Médico Esperanza:** Dra. Laura Fernández (Medicina General, RD$1,500), Dr. Ricardo Gómez (Cardiología, RD$2,500) y Dra. Patricia Núñez (Pediatría, RD$1,800). Todos atienden de lunes a viernes, de 8:00 a 17:00, con turnos de 30 minutos.
+- **Clínica Santo Domingo:** Dr. Miguel Santana (Dermatología, RD$2,000).
+- **20 citas** en las últimas 2 semanas y las próximas 2, con todos los estados e historial. Las útiles para la demo:
+  - una cita **Confirmada de hace 1 o 2 días hábiles** de María con la Dra. Laura ("Revisión de resultados de laboratorio"), para **cerrarla**;
+  - una cita **Confirmada** de María con el Dr. Ricardo Gómez a las **10:00** en los próximos días, para provocar el choque R4;
+  - una cita **Pendiente reprogramada** de María ("Certificado médico para el trabajo"), cuyo historial ya tiene 3 entradas.
+
+---
+
+## 1. Crear, consultar, actualizar y cerrar una cita (4 min)
+
+**Crear (Sesión B, paciente):**
+
+1. **Buscar médico** → pulsar la especialidad **Medicina General** → **Ver horarios** de la Dra. Laura Fernández.
+2. Elegir un día en la tira de fechas. Los turnos ocupados aparecen tachados y no se pueden elegir. Elegir un turno libre, tipo **Consulta** y escribir el motivo.
+3. **Continuar** → diálogo **"Confirma tu cita"** con el médico, el centro, la fecha, la hora y el **costo RD$1,500** → **Confirmar y agendar**.
+4. Pantalla **"¡Tu cita fue agendada!"** con el código (por ejemplo `CIT-0021`) y estado **Pendiente** → **Ver mi cita**.
+
+**Consultar y actualizar:**
+
+5. **Mis citas** → pestañas **Próximas** e **Historial**, con el estado en color (amarillo, azul, verde, gris y rojo).
+6. En el detalle de la cita nueva → **Editar motivo o tipo** → cambiar el tipo a **Estudio** → **Guardar cambios**. El historial muestra "Tipo: Consulta → Estudio".
+
+**Confirmar y cerrar (Sesión C, centro):**
+
+7. **Agenda del centro** → filtrar **Estado: Pendiente** → abrir la cita nueva → **Confirmar cita** → **Sí, confirmar**.
+8. Volver a la agenda → **Estado: Confirmada** → abrir la de **"Revisión de resultados de laboratorio"** (ya pasó su hora) → **Cerrar cita** → **Atendida** → escribir las notas → **Cerrar cita**. Queda **Atendida**, con las notas y "Esta cita está cerrada y ya no se puede modificar.".
+
+## 2. Validar las reglas de negocio (3 min)
+
+Mostrar los mensajes, que salen de la API y se ven en rojo dentro de la pantalla o del diálogo:
+
+| Regla | Cómo mostrarla | Mensaje |
+|---|---|---|
+| R3 (médico ocupado) | En el perfil del médico, los turnos tomados aparecen tachados. | No se pueden elegir. |
+| R4 (paciente ocupado) | Sesión B: agendar con la Dra. Laura el mismo día y a la misma hora que la cita de Cardiología de María (10:00). | "Ya tienes otra cita activa el … 10:00 (CIT-…)." |
+| R2 (horario) | En el selector de fecha, elegir un **sábado**. | "El médico no atiende este día. Elige otra fecha." |
+| R9 (cierre) | Sesión C: cerrar como **Atendida** sin notas; o cerrar la cita nueva, que todavía no ha llegado su hora. | "Para marcar la cita como atendida debes escribir las notas de cierre." / "La cita solo se puede cerrar después de su hora (…)". |
+| R8 (cancelación) | Sesión B: **Cancelar cita** sin escribir motivo. | "Debes indicar el motivo de la cancelación." |
+| R6 y R7 (estados) | Una cita cerrada ya no ofrece acciones. Para cerrar una cita Pendiente, la API responde 409 "…Primero hay que confirmarla." (cubierto por TC-35). | — |
+| 403 (cita ajena) | Copiar la URL de la cita nueva desde la Sesión C, cerrar sesión, entrar como `centro2@medicita.local` y pegarla. | Pantalla **Acceso denegado (ERROR 403)**, y queda en la auditoría. |
+| R10 (simultaneidad) | Explicar: transacción `Serializable` más índices únicos parciales. La prueba TC-38 envía 2 reservas a la vez y siempre obtiene un 201 y un 409. | — |
+
+## 3. Consultar por estado, fecha o responsable (1,5 min)
+
+Sesión A (admin) → **Operaciones**:
+
+1. **Estado: Confirmada** → solo citas azules.
+2. **Desde / Hasta** con la semana actual.
+3. **Centro médico: Clínica Santo Domingo** → solo las del Dr. Miguel Santana. Cambiar a **Centro Médico Esperanza** y elegir **Médico: Dr. Ricardo Gómez** (el responsable).
+4. Buscar por texto (`maría` o un código `CIT-…`) y cambiar el orden. **Limpiar filtros**.
+5. Comentar: *"El centro ve los mismos filtros, pero solo con las citas de su centro, y el paciente solo ve las suyas."*
+
+## 4. Historial de cambios (1,5 min)
+
+1. Abrir la cita nueva (desde Operaciones o desde la Sesión B): la **línea de tiempo** muestra Cita creada → Datos actualizados → Cita confirmada (y la cancelación o el cierre, si se hizo), cada una con la fecha, quién la hizo, el estado anterior y el nuevo, y lo que cambió.
+2. Abrir **"Certificado médico para el trabajo"** (María): Creada → Confirmada → **Reprogramada** con "Fecha y hora: antes → después" y el estado vuelve a Pendiente.
+3. **Auditoría** → filtrar **Acción: Cita cerrada** o **Acceso denegado (403)**. *"Cada cambio se guarda en el historial de la cita, en la misma transacción, y también en la auditoría general."*
+
+## 5. Reporte básico de operaciones (1,5 min)
+
+1. Sesión A → **Reportes** (rango por defecto: últimas 2 semanas y próximas 2): tarjetas de **total**, **tasa de asistencia**, **tasa de cancelación** e **ingresos** (citas atendidas); barras **por estado**; columnas **por día** (al pasar el mouse se ve el detalle) y la tabla **por médico**.
+2. Cambiar **Centro médico** o **Médico** y ver cómo cambian los números.
+3. **Descargar CSV** y abrirlo en Excel: resumen, por médico, por día y el detalle de cada cita.
+4. **Vista imprimible** → **Imprimir** (el menú lateral no sale en la impresión).
+5. Sesión C → **Reportes**: el centro ve **solo su centro**.
+
+## 6. Pruebas automatizadas (1 min, opcional)
+
+```bash
+npm test
+```
+
+Resultado esperado: **179 pruebas aprobadas** (105 unitarias + 74 e2e). Las 80 de la Épica 1 siguen pasando. Ver [PLAN_PRUEBAS.md](PLAN_PRUEBAS.md).
+
+## Plan B
+
+| Problema | Acción |
+|---|---|
+| Errores 500 en médicos o citas ("la tabla no existe") | Falta la migración: `npm run db:migrate` y reiniciar `npm run dev`. |
+| No hay citas o los datos quedaron alterados por un ensayo | `npm run db:seed` (restablece las citas de demo con fechas relativas a hoy). |
+| El turno que se quería usar ya está ocupado | Elegir otro turno; los ocupados aparecen tachados. |
+| No se puede mostrar en vivo | Usar las capturas 14 → 34 de [evidencias/](evidencias/). |
+
+## Evidencias de la Épica 2
+
+| Archivo | Muestra |
+|---|---|
+| [14-buscar-medico.png](evidencias/14-buscar-medico.png) / [15-buscar-por-especialidad.png](evidencias/15-buscar-por-especialidad.png) | Búsqueda de médicos y filtro por especialidad. |
+| [16-perfil-medico-horarios.png](evidencias/16-perfil-medico-horarios.png) | Perfil del médico y turnos libres. |
+| [17-regla-paciente-ocupado-409.png](evidencias/17-regla-paciente-ocupado-409.png) | Regla R4: la paciente ya tiene otra cita a esa hora. |
+| [18-confirmar-cita-resumen-costo.png](evidencias/18-confirmar-cita-resumen-costo.png) / [19-cita-agendada.png](evidencias/19-cita-agendada.png) | Resumen con costo y cita agendada. |
+| [20-detalle-cita-paciente.png](evidencias/20-detalle-cita-paciente.png) | Detalle de la cita con acciones e historial. |
+| [21-mis-citas-proximas.png](evidencias/21-mis-citas-proximas.png) / [22-mis-citas-historial.png](evidencias/22-mis-citas-historial.png) | Mis citas: Próximas e Historial. |
+| [23-agenda-centro.png](evidencias/23-agenda-centro.png) | Agenda del centro con filtros. |
+| [24-confirmar-cita-dialogo.png](evidencias/24-confirmar-cita-dialogo.png) | Confirmación de la cita. |
+| [25-regla-notas-obligatorias.png](evidencias/25-regla-notas-obligatorias.png) / [26-cita-cerrada-historial.png](evidencias/26-cita-cerrada-historial.png) | Regla R9 y cita cerrada con su línea de tiempo. |
+| [27-medicos-y-horarios.png](evidencias/27-medicos-y-horarios.png) / [28-agregar-medico.png](evidencias/28-agregar-medico.png) | Médicos y horarios del centro. |
+| [29-reporte-centro.png](evidencias/29-reporte-centro.png) / [31-reportes-admin.png](evidencias/31-reportes-admin.png) / [32-reporte-imprimible.png](evidencias/32-reporte-imprimible.png) | Reportes (centro y admin) y vista imprimible. |
+| [30-operaciones-admin.png](evidencias/30-operaciones-admin.png) | Operaciones: todas las citas con filtros. |
+| [33-cita-ajena-403.png](evidencias/33-cita-ajena-403.png) / [34-auditoria-citas.png](evidencias/34-auditoria-citas.png) | Cita ajena (403) y auditoría de las acciones. |
+| [npm-test.txt](evidencias/npm-test.txt) | Salida completa de `npm test` (179 pruebas). |
 
 > Nunca mostrar ni capturar el archivo `.env`, cookies ni tokens.

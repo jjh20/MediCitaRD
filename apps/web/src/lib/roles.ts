@@ -21,7 +21,9 @@ export type NavIcon =
   | "calendar-clock"
   | "stethoscope"
   | "users"
-  | "scroll-text";
+  | "scroll-text"
+  | "clipboard"
+  | "chart";
 
 export interface NavItem {
   href: string;
@@ -39,9 +41,12 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   CENTRO_MEDICO: [
     { href: "/centro/agenda", label: "Agenda del centro", icon: "calendar-clock" },
     { href: "/centro/medicos", label: "Médicos y horarios", icon: "stethoscope" },
+    { href: "/centro/reportes", label: "Reportes", icon: "chart" },
   ],
   ADMIN: [
     { href: "/admin/usuarios", label: "Usuarios y roles", icon: "users" },
+    { href: "/admin/operaciones", label: "Operaciones", icon: "clipboard" },
+    { href: "/admin/reportes", label: "Reportes", icon: "chart" },
     { href: "/admin/auditoria", label: "Auditoría", icon: "scroll-text" },
   ],
 };

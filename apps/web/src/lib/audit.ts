@@ -8,6 +8,16 @@ export const AUDIT_ACTIONS = {
   USER_DEACTIVATED: { label: "Usuario desactivado", tone: "warning" },
   ACCESS_DENIED_401: { label: "Acceso denegado (401)", tone: "danger" },
   ACCESS_DENIED_403: { label: "Acceso denegado (403)", tone: "danger" },
+  MEDICO_CREADO: { label: "Médico creado", tone: "info" },
+  MEDICO_ACTUALIZADO: { label: "Médico actualizado", tone: "info" },
+  MEDICO_ACTIVADO: { label: "Médico activado", tone: "success" },
+  MEDICO_DESACTIVADO: { label: "Médico desactivado", tone: "warning" },
+  CITA_CREADA: { label: "Cita creada", tone: "info" },
+  CITA_ACTUALIZADA: { label: "Cita actualizada", tone: "neutral" },
+  CITA_REPROGRAMADA: { label: "Cita reprogramada", tone: "warning" },
+  CITA_CONFIRMADA: { label: "Cita confirmada", tone: "info" },
+  CITA_CERRADA: { label: "Cita cerrada", tone: "success" },
+  CITA_CANCELADA: { label: "Cita cancelada", tone: "danger" },
 } as const;
 
 export type AuditActionKey = keyof typeof AUDIT_ACTIONS;

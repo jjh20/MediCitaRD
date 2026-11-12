@@ -14,6 +14,8 @@
     "setup": "npm run db:up && npm run db:migrate && npm run db:seed",
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @medicita/api\" \"npm run dev -w @medicita/web\"",
     "build": "npm run build -w @medicita/api && npm run build -w @medicita/web",
+    "build:api": "npm run build -w @medicita/api",
+    "build:web": "npm run build -w @medicita/web",
     "start": "concurrently -n api,web -c blue,green \"npm run start:prod -w @medicita/api\" \"npm run start -w @medicita/web\"",
     "test": "npm run test -w @medicita/api",
     "lint": "npm run lint -w @medicita/api && npm run lint -w @medicita/web",

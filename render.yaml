@@ -1,0 +1,35 @@
+# Blueprint de Render para la API de MediCita RD (entorno de prueba).
+# Render → New → Blueprint → elige este repositorio y la rama.
+# Las variables con "sync: false" se piden al crear el servicio: copia los
+# valores desde docs/DESPLIEGUE.md (nunca los escribas en este archivo).
+services:
+  - type: web
+    name: medicita-api
+    runtime: node
+    plan: free
+    # Misma zona que la base de Neon (AWS us-east-1) para menos latencia
+    region: virginia
+    # Raíz del repositorio: es un monorepo con workspaces de npm
+    rootDir: .
+    buildCommand: npm ci --include=dev && npm run build -w @medicita/api
+    # Aplica las migraciones pendientes y arranca la API (escucha en PORT)
+    startCommand: npm run start:deploy -w @medicita/api
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: INTERNAL_API_KEY
+        sync: false
+      - key: WEB_URL
+        sync: false
+      - key: TRUST_PROXY
+        value: "true"

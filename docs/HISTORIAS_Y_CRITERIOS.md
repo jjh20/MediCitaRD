@@ -1,7 +1,8 @@
-# Historias de usuario y criterios de aceptación: Épicas 1 y 2
+# Historias de usuario y criterios de aceptación: Épicas 1, 2 y 3
 
 - [Épica 1: Configuración, gestión de usuarios y accesos](#épica-1-configuración-gestión-de-usuarios-y-accesos) (HU-01 a HU-08)
 - [Épica 2: Gestión Operativa (citas médicas)](#épica-2-gestión-operativa-citas-médicas) (HU-09 a HU-15)
+- [Épica 3: Gestión Logística (inventario)](#épica-3-gestión-logística-inventario) (HU-16 a HU-21)
 
 ## Épica 1: Configuración, gestión de usuarios y accesos
 
@@ -248,14 +249,118 @@ Se validan en la API, con mensajes en español, y cada una tiene al menos una pr
 
 ---
 
+## Épica 3: Gestión Logística (inventario)
+
+> Como **centro médico**, necesito controlar el inventario de insumos y equipos (existencias, lotes, vencimientos, asignaciones y consumos) para atender a los pacientes sin quedarme sin material, sin usar productos vencidos y sabiendo quién tiene cada equipo.
+
+**Objetivo de negocio:** que cada movimiento del inventario quede registrado, validado e inmutable; que el sistema avise de bajo stock y vencimientos, y que el centro y el administrador puedan medir existencias, valor y consumo.
+
+| ID | Historia | Prioridad | Estado | Pruebas |
+|---|---|---|---|---|
+| HU-16 | Registrar y consultar recursos | Alta | ✅ Terminada | TC-43 a TC-45, TU-39, TW-25, TW-26, TW-33 |
+| HU-17 | Entradas, salidas, ajustes y consumo en citas | Alta | ✅ Terminada | TC-46 a TC-49, TC-53, TC-54, TU-34 a TU-36, TU-40, TU-41, TU-43 a TU-47, TW-27, TW-28, TW-30 |
+| HU-18 | Asignar y devolver equipos | Alta | ✅ Terminada | TC-50, TU-37, TU-38, TW-29 |
+| HU-19 | Validar disponibilidad y alertas | Alta | ✅ Terminada | TC-51, TU-36, TU-42, TW-25, TW-27 |
+| HU-20 | Historial de movimientos | Alta | ✅ Terminada | TC-52, TU-43, TW-28, TW-31 |
+| HU-21 | Reportes de existencias y de movimientos | Media | ✅ Terminada | TC-55, TC-56, TU-48 a TU-50, TW-32 |
+
+### Reglas de negocio
+
+Se validan en la API (con la fila del recurso bloqueada), con mensajes en español, y cada una tiene al menos una prueba.
+
+| Regla | Descripción | Respuesta | Pruebas |
+|---|---|---|---|
+| L1 | Las cantidades son enteros mayores que 0. | 400 | TU-34, TC-46, TC-47 |
+| L2 | Una SALIDA no puede dejar el stock negativo: "Stock insuficiente (disponible: X)". | 409 | TU-35, TC-47, TC-53 |
+| L3 | Insumos con vencimiento: la ENTRADA exige lote y fecha futura; la SALIDA descuenta por FEFO (primero el lote que vence antes) y nunca toma lotes vencidos. | 400 / 409 | TU-36, TC-46, TC-47 |
+| L4 | Solo los EQUIPOS se asignan; solo si están DISPONIBLES, a un médico activo del mismo centro y con devolución prevista futura. Ya ASIGNADO o en MANTENIMIENTO → 409. | 400 / 409 | TU-37, TC-50 |
+| L5 | Solo se devuelve un equipo ASIGNADO; vuelve a DISPONIBLE. | 409 | TU-38, TC-50 |
+| L6 | Un recurso inactivo o dado de baja no admite movimientos. | 409 | TU-39, TC-49, TC-50 |
+| L7 | Un AJUSTE exige motivo y no puede dejar el stock negativo. | 400 / 409 | TU-40, TC-48 |
+| L8 | Una SALIDA ligada a una cita exige que la cita sea del mismo centro (si no, 403 auditado) y esté ATENDIDA (si no, 409). | 403 / 409 | TU-41, TU-45, TC-53 |
+| L9 | Dos salidas simultáneas no pueden dejar el stock negativo: `SELECT … FOR UPDATE` sobre la fila del recurso dentro de la transacción, más `CHECK (stock >= 0)` en la base. | 409 | TU-43, TU-44, TC-54 |
+| L10 | Alertas: insumo con disponible ≤ mínimo → "Bajo stock"; lote que vence en 30 días o menos → "Próximo a vencer"; lote ya vencido con existencias → "Vencido". | — | TU-42, TC-51, TC-55 |
+
+### HU-16: Registrar y consultar recursos
+
+**Como** centro médico, **quiero** registrar los insumos y equipos de mi centro **para** controlar su existencia y su valor.
+
+| ID | Criterio de aceptación |
+|---|---|
+| CA-16.1 | **Dado** que soy un centro, **cuando** registro un insumo (nombre, categoría, unidad, costo, stock mínimo y si maneja lotes) o un equipo (con número de serie), **entonces** se crea con el código `REC-0001…`, el insumo con stock 0 y el equipo DISPONIBLE, y se audita `RECURSO_CREADO`. |
+| CA-16.2 | **Dado** que ya tengo un recurso con ese nombre, **cuando** registro otro igual, **entonces** recibo 409 "Ya existe un recurso con ese nombre en tu centro." (otro centro sí puede usar el mismo nombre). |
+| CA-16.3 | **Dado** el listado, **cuando** filtro por tipo, categoría, texto (nombre, código o serie) o estado (bajo stock, próximo a vencer, vencido, disponible, asignado, mantenimiento, inactivo), **entonces** veo solo los recursos que coinciden, con sus insignias y el resumen de alertas. |
+| CA-16.4 | **Dado** un recurso mío, **cuando** lo edito o lo doy de baja o lo reactivo, **entonces** el cambio se guarda y se audita. El stock nunca se edita a mano: solo con movimientos. |
+| CA-16.5 | **Dado** un recurso de otro centro, **cuando** intento verlo, editarlo o moverlo, **entonces** recibo 403 "Acceso denegado: este recurso pertenece a otro centro." y queda auditado. El paciente recibe 403 en todo el inventario. |
+| CA-16.6 | **Dado** que soy administrador, **cuando** abro Inventario, **entonces** veo los recursos de todos los centros con filtro por centro, en solo lectura. |
+
+### HU-17: Entradas, salidas, ajustes y consumo en citas
+
+**Como** centro médico, **quiero** registrar lo que entra, sale o se corrige del inventario, y los insumos usados en cada cita, **para** que el stock refleje la realidad.
+
+| ID | Criterio de aceptación |
+|---|---|
+| CA-17.1 | **Dado** un insumo, **cuando** registro una ENTRADA con cantidad, factura o proveedor y costo, **entonces** el stock sube, se crea el movimiento `MOV-…` con el stock antes y después, y el costo pasa a ser el último costo del recurso. |
+| CA-17.2 | **Dado** un insumo con vencimiento, **cuando** registro una entrada sin lote o con una fecha vencida, **entonces** recibo 400 (L3). Si el lote ya existe con la misma fecha, la cantidad se suma a ese lote. |
+| CA-17.3 | **Dado** un insumo, **cuando** registro una SALIDA, **entonces** se descuenta por FEFO (un movimiento por lote), sin tomar lotes vencidos; si no alcanza, recibo 409 "Stock insuficiente (disponible: X)." y no cambia nada. |
+| CA-17.4 | **Dado** un AJUSTE, **cuando** no indico el motivo o la disminución dejaría el stock negativo, **entonces** recibo 400 o 409 (L7). En insumos con lotes, el ajuste se hace sobre un lote. |
+| CA-17.5 | **Dado** una cita ATENDIDA de mi centro, **cuando** pulso "Registrar insumos usados" y confirmo varios insumos, **entonces** se crean SALIDAS ligadas a la cita en una sola operación: si un insumo no alcanza, no se registra ninguno. |
+| CA-17.6 | **Dado** una cita que no está atendida o que es de otro centro, **cuando** registro un consumo, **entonces** recibo 409 o 403 (L8). |
+| CA-17.7 | **Dado** un recurso inactivo o dado de baja, **cuando** intento cualquier movimiento, **entonces** recibo 409 (L6). |
+| CA-17.8 | **Dado** que dos personas sacan del mismo insumo al mismo tiempo, **entonces** el stock nunca queda negativo y la que no alcanza recibe 409 (L9). |
+
+### HU-18: Asignar y devolver equipos
+
+**Como** centro médico, **quiero** asignar equipos a los médicos y registrar su devolución **para** saber siempre quién tiene cada equipo.
+
+| ID | Criterio de aceptación |
+|---|---|
+| CA-18.1 | **Dado** un equipo DISPONIBLE, **cuando** lo asigno a un médico activo de mi centro con una fecha de devolución futura, **entonces** pasa a ASIGNADO y se registra el movimiento con el médico y la fecha prevista. |
+| CA-18.2 | **Dado** un equipo ya ASIGNADO o en MANTENIMIENTO, **cuando** intento asignarlo, **entonces** recibo 409. Un médico inactivo o de otro centro, o una fecha pasada, responden 400 (L4). Un insumo no se asigna (400). |
+| CA-18.3 | **Dado** un equipo ASIGNADO, **cuando** registro la devolución, **entonces** vuelve a DISPONIBLE. Devolver uno que no está asignado responde 409 (L5). |
+| CA-18.4 | **Dado** un equipo, **cuando** lo envío a mantenimiento, lo marco disponible otra vez o lo doy de baja, **entonces** queda un movimiento AJUSTE con el estado antes y después. Un equipo asignado no se puede mandar a mantenimiento ni dar de baja sin devolverlo antes (409). |
+
+### HU-19: Validar disponibilidad y alertas
+
+**Como** centro médico, **quiero** ver cuánto hay disponible realmente y recibir alertas **para** reponer a tiempo y no usar productos vencidos.
+
+| ID | Criterio de aceptación |
+|---|---|
+| CA-19.1 | **Dado** un insumo con lotes, **cuando** consulto su disponibilidad, **entonces** veo cada lote con su vencimiento, cantidad y estado (Vigente, Próximo a vencer o Vencido), cuál sale primero, y el disponible sin contar los vencidos. |
+| CA-19.2 | **Dado** un equipo, **cuando** consulto su disponibilidad, **entonces** veo su estado y, si está asignado, a qué médico, hasta cuándo y si la devolución está atrasada. |
+| CA-19.3 | **Dado** el listado de recursos, **entonces** veo las insignias "Bajo stock", "Próximo a vencer" y "Vencido", y tarjetas con cuántos recursos tienen cada alerta; al pulsarlas se filtra la tabla. |
+
+### HU-20: Historial de movimientos
+
+**Como** centro médico o administrador, **quiero** consultar el historial de movimientos **para** saber qué pasó con cada recurso, cuándo y quién lo hizo.
+
+| ID | Criterio de aceptación |
+|---|---|
+| CA-20.1 | **Dado** el detalle de un recurso, **entonces** veo la línea de tiempo completa y en orden, con el tipo, el código, el stock antes y después (o el estado del equipo), el usuario, el lote, el médico, la cita, la referencia y el motivo. |
+| CA-20.2 | **Dado** la pantalla Movimientos, **cuando** filtro por tipo, rango de fechas, médico, usuario o texto, **entonces** veo solo los que coinciden; el centro ve solo los suyos y el admin los de todos (con filtro por centro). |
+| CA-20.3 | **Dado** cualquier movimiento, **entonces** no se puede editar ni borrar (no existen esas rutas): un error se corrige con un AJUSTE. Cada movimiento queda también en la auditoría (`MOV_*`). |
+
+### HU-21: Reportes de existencias y de movimientos
+
+**Como** centro médico (mi centro) o administrador (global), **quiero** reportes del inventario **para** conocer su valor, las alertas y el consumo.
+
+| ID | Criterio de aceptación |
+|---|---|
+| CA-21.1 | **Dado** el reporte de existencias, **entonces** veo claramente el **valor total del inventario en DOP** y los totales de **Bajo stock**, **Próximo a vencer** y **Vencido**, los equipos por estado, el valor por categoría, las listas de cada alerta y la tabla de existencias por recurso. |
+| CA-21.2 | **Dado** el reporte de movimientos de un rango de fechas, **entonces** veo los totales de entradas y salidas (unidades y valor), los movimientos por tipo, por recurso y por día, y el consumo por cita. |
+| CA-21.3 | **Dado** cualquiera de los dos reportes, **cuando** pulso "Descargar CSV" o "Vista imprimible", **entonces** obtengo el mismo contenido en CSV (UTF-8 con BOM) o en una página lista para imprimir. |
+| CA-21.4 | **Dado** que soy centro, **cuando** pido el reporte de otro centro, **entonces** la API me devuelve el mío. El paciente recibe 403. |
+
+---
+
 ## Matriz de autorización
 
 | Recurso | Anónimo | Paciente | Centro médico | Administrador |
 |---|:-:|:-:|:-:|:-:|
 | Inicio, Iniciar sesión, Crear cuenta | ✅ | ↪ panel | ↪ panel | ↪ panel |
 | `/paciente/*` (Mis citas, Buscar médico, Pagos) | ↪ login | ✅ | 403 | 403 |
-| `/centro/*` (Agenda, Médicos y horarios, Reportes) | ↪ login | 403 | ✅ | 403 |
-| `/admin/*` (Usuarios y roles, Operaciones, Reportes, Auditoría) | ↪ login | 403 | 403 | ✅ |
+| `/centro/*` (Agenda, Médicos y horarios, Inventario, Reportes) | ↪ login | 403 | ✅ | 403 |
+| `/admin/*` (Usuarios y roles, Operaciones, Reportes, Inventario, Auditoría) | ↪ login | 403 | 403 | ✅ |
 | API `/api/users/*`, `/api/audit` | 401 | 403 | 403 | ✅ |
 | API `/api/modules/paciente` | 401 | ✅ | 403 | 403 |
 | API `/api/modules/centro` | 401 | 403 | ✅ | 403 |
@@ -266,25 +371,30 @@ Se validan en la API, con mensajes en español, y cada una tiene al menos una pr
 | API `PATCH /api/citas/:id`, `reprogramar`, `cancelar` | 401 | ✅ las suyas | ✅ las de su centro | 403 |
 | API `confirmar`, `cerrar` | 401 | 403 | ✅ las de su centro | 403 |
 | API `/api/reportes/citas`, `citas.csv` | 401 | 403 | ✅ su centro | ✅ global |
+| API `GET /api/recursos*`, `GET /api/movimientos` | 401 | 403 | ✅ los suyos (otro centro: 403) | ✅ todos (lectura) |
+| API `POST`/`PATCH /api/recursos*`, `POST /api/movimientos/*` | 401 | 403 | ✅ los suyos (otro centro: 403) | 403 |
+| API `/api/reportes/existencias`, `movimientos` (y `.csv`) | 401 | 403 | ✅ su centro | ✅ global |
 
 ## Permisos por rol
 
 | Rol | Permisos |
 |---|---|
 | Paciente | `citas:ver`, `medicos:buscar`, `pagos:ver` |
-| Centro médico | `agenda:gestionar`, `medicos:gestionar`, `reportes:ver` |
-| Administrador | `usuarios:gestionar`, `auditoria:ver`, `operaciones:ver`, `reportes:ver` |
+| Centro médico | `agenda:gestionar`, `medicos:gestionar`, `reportes:ver`, `inventario:gestionar` |
+| Administrador | `usuarios:gestionar`, `auditoria:ver`, `operaciones:ver`, `reportes:ver`, `inventario:ver` |
 
 ## Definición de terminado
 
 Una historia se considera terminada cuando:
 
-- su código está en el repositorio (commit local en `main`);
+- su código está en el repositorio;
 - sus criterios están cubiertos por pruebas automatizadas o por una prueba web documentada;
 - `npm test` pasa completo;
 - la documentación y la evidencia están actualizadas.
 
 ## Fuera del alcance
+
+**Épica 3:** órdenes de compra y proveedores, traslados entre centros, códigos de barras, inventarios físicos programados, reservas de equipos a futuro y notificaciones automáticas de alertas.
 
 **Épica 2:** pagos en línea, notificaciones (correo, SMS o WhatsApp), recordatorios automáticos, lista de espera, excepciones de horario (feriados y vacaciones del médico), varios horarios por día para un mismo médico y edición de citas por el administrador.
 

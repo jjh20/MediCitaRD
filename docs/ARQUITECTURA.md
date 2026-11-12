@@ -1,4 +1,4 @@
-# Arquitectura: MediCita RD (Épicas 1 y 2)
+# Arquitectura: MediCita RD (Épicas 1, 2 y 3)
 
 ## Vista general
 
@@ -65,6 +65,7 @@ sequenceDiagram
 | `medicos/` | **Épica 2.** CRUD de médicos del centro, búsqueda por especialidad, catálogo de especialidades y disponibilidad por día. |
 | `citas/` | **Épica 2.** `cita-rules.ts`: reglas R1 a R9 como funciones puras. `CitasService`: crear, listar con filtros, detalle, PATCH, reprogramar, confirmar, cerrar, cancelar e historial; control de acceso por rol (403 auditado); transacción `Serializable` con historial en la misma transacción y bloqueo optimista. |
 | `reportes/` | **Épica 2.** Reporte de citas (totales por estado, por médico y por día, tasas e ingresos) en JSON y CSV. |
+| `inventario/` | **Épica 3.** `inventario-rules.ts`: reglas L1 a L10 como funciones puras (FEFO, alertas y transiciones del equipo). `RecursosService`: CRUD, filtros con alertas, disponibilidad y baja. `MovimientosService`: entradas, salidas, consumo en citas, ajustes, asignaciones y devoluciones dentro de una transacción con la fila del recurso bloqueada (`FOR UPDATE`); historial y listado. `InventarioReportesService`: existencias y movimientos en JSON y CSV. |
 | `prisma/` | `PrismaService` global. |
 | `common/` | Política de contraseñas, paginación, utilidades de petición (IP y descripción) y `rd-time.ts` (fechas en hora de República Dominicana, UTC−4). |
 | `config/` | Validación de variables de entorno al arrancar. |
@@ -93,6 +94,10 @@ sequenceDiagram
 | `components/citas/*` | Insignia de estado, selector de turnos, tabla de citas con filtros, detalle con diálogos de acción y línea de tiempo del historial. |
 | `components/reportes/*` | Tarjetas, gráficos de barras (CSS, sin dependencias), tabla por médico y vista imprimible. |
 | `lib/citas.ts` | Tipos, colores y etiquetas de estado, y formato de fechas (zona `America/Santo_Domingo`) y de DOP. |
+| `app/(app)/centro/inventario/*` | **Épica 3.** Recursos (tabla con filtros y alertas), detalle `[id]` (disponibilidad, acciones en diálogos e historial), `movimientos` y `reportes` (más `imprimir`). |
+| `app/(app)/admin/inventario/*` | Las mismas vistas en solo lectura, con filtro por centro. |
+| `components/inventario/*` | Insignias de alertas y estados, pestañas de la sección, tabla de recursos, formulario, detalle con diálogos de movimiento, tabla y línea de tiempo de movimientos, reportes y el diálogo "Registrar insumos usados" de la cita. |
+| `lib/inventario.ts` | Tipos, etiquetas y colores de los tipos de movimiento, estados del equipo y estados de los lotes. |
 | `lib/roles.ts` | Roles, etiquetas, página de inicio por rol, menú por rol y reglas de rutas. |
 | `lib/api-client.ts`, `lib/api-server.ts` | `fetch` del navegador (mismo origen) y del servidor (reenvía la cookie). |
 
@@ -144,6 +149,29 @@ Prefijo: `http://localhost:4000/api` (o `/api` desde la web mediante el proxy).
 Códigos de las reglas de negocio: **400** cuando el dato no es válido (R1, R2, R5, R8 y R9) y **409** cuando hay conflicto con el estado actual o con otra cita (R3, R4, R6, R7 y R10). Si alguien intenta acceder a una cita o un médico de otro usuario, la API responde **403** "Acceso denegado: esta cita no te pertenece." y lo audita como `ACCESS_DENIED_403`.
 
 Formato de error (NestJS): `{ "statusCode": 403, "error": "Forbidden", "message": "Acceso denegado: tu perfil no tiene permiso para este recurso." }`. Los errores de validación devuelven `message` como arreglo.
+
+### Épica 3: inventario
+
+| Método | Ruta | Acceso | Descripción | Respuestas |
+|---|---|---|---|---|
+| POST | `/recursos` | CENTRO_MEDICO | `{nombre, tipo: INSUMO\|EQUIPO, categoria, unidad, costoUnitario, stockMinimo?, requiereVencimiento?, numeroSerie?}`. Insumo con stock 0; equipo DISPONIBLE. | 201, 400, 401, 403, 409 |
+| GET | `/recursos?tipo=&categoria=&texto=&centroId=&estado=&page=&pageSize=` | CENTRO_MEDICO (los suyos) o ADMIN (todos) | `estado`: `bajo_stock`, `proximo_vencer`, `vencido`, `disponible`, `asignado`, `mantenimiento` o `inactivo`. Devuelve también `resumen` con el total de cada alerta. | 200, 400, 401, 403 |
+| GET | `/recursos/:id` | Dueño o admin | Recurso con disponible, valor, alertas y lotes con existencias. | 200, 401, 403, 404 |
+| PATCH | `/recursos/:id` | CENTRO_MEDICO (dueño) | Edita nombre, categoría, unidad, costo, mínimo y número de serie (nunca el stock). | 200, 400, 401, 403, 404, 409 |
+| PATCH | `/recursos/:id/estado` | CENTRO_MEDICO (dueño) | `{activo, motivo?}`: activar o dar de baja. En los equipos crea un AJUSTE (estado → BAJA o DISPONIBLE). | 200, 400, 401, 403, 404, 409 |
+| GET | `/recursos/:id/disponibilidad` | Dueño o admin | Insumo: disponible sin vencidos y lotes con estado (`VIGENTE`, `PROXIMO_A_VENCER`, `VENCIDO`) y `utilizable`. Equipo: estado, médico asignado, devolución prevista y si está atrasada. | 200, 401, 403, 404 |
+| GET | `/recursos/:id/movimientos` | Dueño o admin | Historial completo del recurso, del más antiguo al más reciente. | 200, 401, 403, 404 |
+| POST | `/movimientos/entrada` | CENTRO_MEDICO | `{recursoId, cantidad, numeroLote?, fechaVencimiento?, referencia?, costoUnitario?, motivo?}` (L1, L3, L6). | 201, 400, 401, 403, 404, 409 |
+| POST | `/movimientos/salida` | CENTRO_MEDICO | `{recursoId, cantidad, motivo?, citaId?}`. FEFO: un movimiento por lote (L1, L2, L3, L6, L8, L9). | 201, 400, 401, 403, 404, 409 |
+| POST | `/movimientos/consumo` | CENTRO_MEDICO | `{citaId, items: [{recursoId, cantidad}]}`. Varias salidas ligadas a una cita ATENDIDA, todo o nada (L8). | 201, 400, 401, 403, 404, 409 |
+| POST | `/movimientos/ajuste` | CENTRO_MEDICO | Insumo: `{recursoId, sentido: AUMENTO\|DISMINUCION, cantidad, motivo, loteId?}` (L7). Equipo: `{recursoId, estadoEquipo: MANTENIMIENTO\|DISPONIBLE, motivo}`. | 201, 400, 401, 403, 404, 409 |
+| POST | `/movimientos/asignacion` | CENTRO_MEDICO | `{recursoId, medicoId, fechaDevolucionPrevista, motivo?}` (L4). | 201, 400, 401, 403, 404, 409 |
+| POST | `/movimientos/devolucion` | CENTRO_MEDICO | `{recursoId, motivo?}` (L5). | 201, 401, 403, 404, 409 |
+| GET | `/movimientos?tipo=&recursoId=&medicoId=&citaId=&centroId=&desde=&hasta=&usuario=&texto=&page=&pageSize=` | CENTRO_MEDICO (los suyos) o ADMIN (todos) | Movimientos del más reciente al más antiguo. **No hay PATCH ni DELETE:** son inmutables. | 200, 400, 401, 403 |
+| GET | `/reportes/existencias[.csv]?centroId=` | CENTRO_MEDICO (su centro) o ADMIN | Totales (valor total en DOP, bajo stock, próximo a vencer, vencido), equipos por estado, valor por categoría, listas de alertas y existencias por recurso. | 200, 400, 401, 403 |
+| GET | `/reportes/movimientos[.csv]?desde=&hasta=&centroId=` | CENTRO_MEDICO (su centro) o ADMIN | Totales de entradas y salidas, por tipo, por recurso, por día y consumo por cita (rango por defecto: últimos 21 días). | 200, 400, 401, 403 |
+
+Códigos del inventario: **400** cuando el dato no es válido (L1, L3, L4 por médico o fecha, L7 sin motivo) y **409** cuando hay conflicto con el estado actual (L2, L4 equipo no disponible, L5, L6, L7 stock negativo, L8 cita no atendida). Un recurso o una cita de otro centro responde **403** y se audita como `ACCESS_DENIED_403`.
 
 ## Modelo de datos
 
@@ -224,7 +252,7 @@ erDiagram
 - **Cita:** índices por `estado`, `fechaHora`, `medicoId`, `centroId` y `pacienteId`. `codigo` lo genera la base con la secuencia `Cita_codigo_seq`. Además hay **dos índices únicos parciales** (en SQL, porque Prisma no los modela): `(medicoId, fechaHora)` y `(pacienteId, fechaHora)` `WHERE estado IN ('PENDIENTE','CONFIRMADA')`. Son la última barrera de R3, R4 y R10.
 - **CitaHistorial:** índice por `(citaId, createdAt)`. Se escribe en la **misma transacción** que el cambio de la cita.
 - **AccionCita:** `CREADA`, `ACTUALIZADA`, `REPROGRAMADA`, `CONFIRMADA`, `CERRADA`, `CANCELADA`.
-- Esquema: [apps/api/prisma/schema.prisma](../apps/api/prisma/schema.prisma). Migraciones: `apps/api/prisma/migrations/` (`20261103055551_init` y `20261104120000_epica2_citas`).
+- Esquema: [apps/api/prisma/schema.prisma](../apps/api/prisma/schema.prisma). Migraciones: `apps/api/prisma/migrations/` (`20261103055551_init`, `20261104120000_epica2_citas` y `20261111120000_epica3_inventario`).
 
 ## Ciclo de vida de la cita (estados)
 
@@ -267,6 +295,120 @@ sequenceDiagram
   A-->>U: 200 cita actualizada
 ```
 
+## Modelo del inventario (Épica 3)
+
+```mermaid
+erDiagram
+  User ||--o{ Recurso : "centro registra"
+  Recurso ||--o{ Lote : "lotes (insumos con vencimiento)"
+  Recurso ||--o{ Movimiento : "historial"
+  Lote ||--o{ Movimiento : "lote afectado"
+  User ||--o{ Movimiento : "usuario que registra"
+  Medico ||--o{ Movimiento : "asignaciones"
+  Medico ||--o{ Recurso : "equipo asignado"
+  Cita ||--o{ Movimiento : "consumo en la cita"
+  Recurso {
+    uuid id PK
+    uuid centroId FK "User CENTRO_MEDICO"
+    varchar codigo UK "REC-0001 (secuencia)"
+    varchar nombre "único por centro"
+    TipoRecurso tipo "INSUMO | EQUIPO"
+    CategoriaRecurso categoria
+    varchar unidad
+    int stockActual "solo INSUMO, CHECK >= 0"
+    int stockMinimo "solo INSUMO"
+    decimal costoUnitario "último costo (DOP)"
+    boolean requiereVencimiento
+    EstadoEquipo estadoEquipo "solo EQUIPO"
+    varchar numeroSerie "nullable"
+    uuid medicoAsignadoId FK "nullable"
+    datetime devolucionPrevista "nullable"
+    boolean activo
+  }
+  Lote {
+    uuid id PK
+    uuid recursoId FK
+    varchar numeroLote "único por recurso"
+    date fechaVencimiento
+    int cantidadDisponible "CHECK >= 0"
+    datetime createdAt
+  }
+  Movimiento {
+    uuid id PK
+    varchar codigo UK "MOV-0001 (secuencia)"
+    uuid recursoId FK
+    uuid centroId FK
+    uuid usuarioId FK
+    TipoMovimiento tipo
+    int cantidad "CHECK > 0"
+    int stockAnterior "nullable"
+    int stockNuevo "nullable"
+    EstadoEquipo estadoEquipoAnterior "nullable"
+    EstadoEquipo estadoEquipoNuevo "nullable"
+    uuid loteId FK "nullable"
+    uuid medicoId FK "nullable"
+    uuid citaId FK "nullable"
+    varchar motivo
+    varchar referencia "factura o proveedor"
+    decimal costoUnitario "nullable"
+    datetime fechaDevolucionPrevista "nullable"
+    datetime createdAt
+  }
+```
+
+- **Enums:** `TipoRecurso` (INSUMO, EQUIPO), `CategoriaRecurso` (MATERIAL_MEDICO, MEDICAMENTO, REACTIVO, EQUIPO_MEDICO, OTRO), `EstadoEquipo` (DISPONIBLE, ASIGNADO, MANTENIMIENTO, BAJA) y `TipoMovimiento` (ENTRADA, SALIDA, AJUSTE, ASIGNACION, DEVOLUCION).
+- **Recurso:** `@@unique([centroId, nombre])`; índices por `centroId`, `tipo` y `categoria`. En los insumos con vencimiento, `stockActual` es la suma de sus lotes (incluidos los vencidos, hasta que se ajustan).
+- **Movimiento:** índices por `(centroId, createdAt)`, `(recursoId, createdAt)`, `tipo`, `medicoId` y `citaId`. Es **inmutable**: no hay rutas para editarlo ni borrarlo.
+- **Restricciones `CHECK` (en la migración):** `stockActual >= 0`, `cantidadDisponible >= 0` y `cantidad > 0`. Son la última barrera de L1, L2, L7 y L9.
+- **Acciones auditadas:** `RECURSO_CREADO`, `RECURSO_ACTUALIZADO`, `RECURSO_ACTIVADO`, `RECURSO_BAJA`, `MOV_ENTRADA`, `MOV_SALIDA`, `MOV_AJUSTE`, `MOV_ASIGNACION` y `MOV_DEVOLUCION`.
+
+### Tipos de movimiento
+
+| Tipo | Aplica a | Efecto | Reglas |
+|---|---|---|---|
+| ENTRADA | Insumos | Suma al stock (y al lote, si maneja vencimiento). Puede traer factura o proveedor y costo, que pasa a ser el último costo. | L1, L3, L6 |
+| SALIDA | Insumos | Resta del stock. En insumos con lotes, un movimiento por lote según FEFO (sin vencidos). Puede ligarse a una cita (consumo). | L1, L2, L3, L6, L8, L9 |
+| AJUSTE | Insumos y equipos | Insumo: aumenta o disminuye el stock (o un lote) con motivo. Equipo: cambia el estado (mantenimiento ↔ disponible, baja ↔ reactivación). | L6, L7 |
+| ASIGNACION | Equipos | DISPONIBLE → ASIGNADO a un médico, con devolución prevista. | L4, L6 |
+| DEVOLUCION | Equipos | ASIGNADO → DISPONIBLE. | L5 |
+
+## Ciclo de estados del equipo
+
+```mermaid
+stateDiagram-v2
+  [*] --> DISPONIBLE: se registra el equipo
+  DISPONIBLE --> ASIGNADO: ASIGNACION (médico activo del centro, devolución futura)
+  ASIGNADO --> DISPONIBLE: DEVOLUCION
+  DISPONIBLE --> MANTENIMIENTO: AJUSTE con motivo
+  MANTENIMIENTO --> DISPONIBLE: AJUSTE con motivo
+  DISPONIBLE --> BAJA: dar de baja (AJUSTE)
+  MANTENIMIENTO --> BAJA: dar de baja (AJUSTE)
+  BAJA --> DISPONIBLE: reactivar (AJUSTE)
+```
+
+- Un equipo **ASIGNADO** no puede ir a mantenimiento ni darse de baja: primero se registra la devolución (409).
+- **BAJA** no admite movimientos (L6) hasta reactivarlo.
+
+### Flujo de una salida (con bloqueo de fila)
+
+```mermaid
+sequenceDiagram
+  participant C as Centro médico
+  participant A as API (MovimientosService)
+  participant DB as PostgreSQL
+  C->>A: POST /movimientos/salida {recursoId, cantidad}
+  A->>DB: cargar recurso y verificar el centro (403 auditado)
+  A->>DB: BEGIN
+  A->>DB: SELECT … FROM "Recurso" WHERE id = $1 FOR UPDATE
+  Note over A,DB: una segunda salida simultánea espera aquí
+  A->>DB: leer el stock y los lotes ya actualizados
+  A->>A: L1, L2, L3 (FEFO), L6 y L8 (inventario-rules.ts)
+  A->>DB: UPDATE lote(s) y stock · INSERT Movimiento (stock antes → después)
+  A->>DB: COMMIT (CHECK stock >= 0 como red de seguridad)
+  A->>DB: AuditLog MOV_SALIDA
+  A-->>C: 201 [movimientos]
+```
+
 ## Decisiones técnicas
 
 | Decisión | Motivo |
@@ -287,8 +429,14 @@ sequenceDiagram
 | **Épica 2:** el costo se copia al crear la cita | Si el centro cambia el precio después, las citas existentes y los ingresos del reporte no cambian. |
 | **Épica 2:** código `CIT-0001` generado por la base | Una secuencia de PostgreSQL no repite códigos aunque haya inserciones simultáneas. |
 | **Épica 2:** gráficos con CSS, sin librería | Menos dependencias, y se imprimen bien. Los colores de estado son los pedidos (amarillo, azul, verde, gris y rojo), siempre con etiqueta y valor visibles y una tabla equivalente. |
+| **Épica 3:** bloqueo de fila (`SELECT … FOR UPDATE`) en lugar de transacción serializable | Las salidas simultáneas sobre el mismo recurso se ponen en fila: la segunda espera y luego lee el stock real, así que responde un 409 claro ("Stock insuficiente (disponible: X)") en vez de un error de serialización. Con varios recursos (consumo), se bloquean en orden de id para evitar interbloqueos. |
+| **Épica 3:** `CHECK` en la base para el stock | Aunque una regla fallara en el código, PostgreSQL rechaza un stock, un lote o una cantidad inválidos. |
+| **Épica 3:** una SALIDA por lote | FEFO puede repartir una salida entre varios lotes; cada parte es un movimiento con su lote y su stock antes y después, así el historial es exacto. |
+| **Épica 3:** cambios de estado del equipo como AJUSTE | Todo cambio de estado deja un movimiento con el estado antes y después, sin agregar tipos nuevos. |
+| **Épica 3:** los vencidos siguen en el stock hasta un ajuste | El stock refleja lo que hay físicamente; el disponible (y las salidas) excluyen los vencidos, y el reporte los muestra aparte con su valor. |
+| **Épica 3:** valor = stock × último costo; los equipos no mueven valor | Valoración simple y explicable. Asignar o devolver un equipo no cuenta como "valor movido" en el reporte de movimientos. |
 | **Épica 2:** CSV con BOM y celdas protegidas | Abre bien en Excel con acentos, y los valores que empiezan con `=`, `+`, `-` o `@` se neutralizan (inyección de fórmulas). |
 
 ## Fuera de alcance (próximas épicas)
 
-Pagos en línea, notificaciones y recordatorios, feriados y excepciones de horario del médico, lista de espera, bloqueo por intentos fallidos, verificación de correo, recuperación de contraseña, MFA, revocación de tokens en el servidor y despliegue.
+Pagos en línea, órdenes de compra y proveedores, traslados de inventario entre centros, notificaciones y recordatorios, feriados y excepciones de horario del médico, lista de espera, bloqueo por intentos fallidos, verificación de correo, recuperación de contraseña, MFA, revocación de tokens en el servidor y despliegue.

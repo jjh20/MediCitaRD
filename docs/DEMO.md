@@ -2,6 +2,7 @@
 
 - [Épica 1: Gestión de usuarios y accesos](#épica-1-gestión-de-usuarios-y-accesos-8-a-10-minutos) (8 a 10 minutos)
 - [Épica 2: Gestión Operativa (citas)](#épica-2-gestión-operativa-citas-10-a-12-minutos) (10 a 12 minutos)
+- [Épica 3: Gestión Logística (inventario)](#épica-3-gestión-logística-inventario-10-a-12-minutos) (10 a 12 minutos)
 
 # Épica 1: Gestión de usuarios y accesos (8 a 10 minutos)
 
@@ -54,8 +55,8 @@ Abrir <http://localhost:3000>. *"MediCita RD: Tu salud, nuestra prioridad. Esta 
 ## 3. Restricción de funcionalidades según el perfil (1 min)
 
 1. Ventana B (paciente): el menú muestra solo **Mis citas, Buscar médico y Pagos**. Al pie de **Pagos** (módulo provisional): *"Acceso verificado por la API: módulo Paciente…"*. La API también valida el rol.
-2. Cerrar sesión y entrar como `centro@medicita.local` → solo **Agenda del centro, Médicos y horarios y Reportes**.
-3. Ventana A: entrar como `admin@medicita.local` → solo **Usuarios y roles, Operaciones, Reportes y Auditoría**.
+2. Cerrar sesión y entrar como `centro@medicita.local` → solo **Agenda del centro, Médicos y horarios, Inventario y Reportes**.
+3. Ventana A: entrar como `admin@medicita.local` → solo **Usuarios y roles, Operaciones, Reportes, Inventario y Auditoría**.
 4. *(Opcional)* Reducir la ventana o usar las herramientas de desarrollo en modo celular: el menú pasa a un botón ☰.
 
 ## 4. Acceso autorizado y no autorizado (1,5 min)
@@ -256,5 +257,115 @@ Resultado esperado: **179 pruebas aprobadas** (105 unitarias + 74 e2e). Las 80 d
 | [30-operaciones-admin.png](evidencias/30-operaciones-admin.png) | Operaciones: todas las citas con filtros. |
 | [33-cita-ajena-403.png](evidencias/33-cita-ajena-403.png) / [34-auditoria-citas.png](evidencias/34-auditoria-citas.png) | Cita ajena (403) y auditoría de las acciones. |
 | [npm-test.txt](evidencias/npm-test.txt) | Salida completa de `npm test` (179 pruebas). |
+
+> Nunca mostrar ni capturar el archivo `.env`, cookies ni tokens.
+
+---
+
+# Épica 3: Gestión Logística (inventario) (10 a 12 minutos)
+
+La logística de MediCita RD es el **inventario de cada centro médico**: insumos con stock y lotes, y equipos con estado. Esta parte demuestra los 5 puntos pedidos: (1) registrar y consultar recursos; (2) gestionar entradas, salidas y asignaciones; (3) validar disponibilidad; (4) consultar el historial de movimientos y (5) generar reportes de existencias y de movimientos.
+
+## Antes de empezar (5 minutos antes)
+
+1. Docker Desktop en verde y, en la raíz del proyecto:
+   ```bash
+   npm run db:up
+   npm run db:migrate   # aplica la migración de la Épica 3 si aún no está
+   npm run db:seed      # restablece cuentas, citas e inventario de demo (fechas relativas a hoy)
+   npm run dev
+   ```
+   El seed **borra y vuelve a crear** el inventario de los centros de demo (códigos desde `REC-0001` y `MOV-0001`).
+2. Sesiones: **A** (normal) con `centro@medicita.local`, **B** (incógnito) con `admin@medicita.local` y, para el 403, `centro2@medicita.local` y `paciente@medicita.local`. Contraseñas: `Demo12345!` (admin: `Admin1234!`).
+
+### Datos que deja el seed (Centro Médico Esperanza)
+
+- **10 insumos** (guantes, jeringas, gasas, alcohol 70 %, tiras de glucosa, paracetamol, mascarillas, solución salina, cinta y catéteres) con **41 movimientos** de las últimas 3 semanas.
+  - **Bajo stock:** Mascarillas quirúrgicas (8 de mínimo 20) y Catéter 22G (35 de 50).
+  - **Próximo a vencer:** Tiras reactivas de glucosa, lote TIR-2604 (vence en 18 días).
+  - **Vencido:** Paracetamol 500 mg, lote PAR-2503 (2 cajas vencidas que no se pueden usar).
+- **4 equipos:** Electrocardiógrafo **asignado** al Dr. Ricardo Gómez, Nebulizador y Oxímetro **disponibles**, Tensiómetro **en mantenimiento**.
+- **5 citas atendidas** con insumos consumidos.
+- **Clínica Santo Domingo:** 3 insumos y un dermatoscopio (para el 403 entre centros).
+
+---
+
+## 1. Registrar y consultar recursos (2 min)
+
+1. Sesión A → **Inventario** → pestaña **Recursos**. Señalar las tarjetas **Bajo stock 2**, **Próximo a vencer 1** y **Con lotes vencidos 1**, y las insignias de la tabla.
+2. Pulsar la tarjeta **Bajo stock** → la tabla muestra solo Mascarillas y Catéter. Probar los filtros **Tipo: Equipos** y **Buscar** (`REC-0006` o `ECG`).
+3. **Nuevo recurso** → Insumo "Termómetro desechable", categoría Material médico, unidad, costo y mínimo, sin vencimiento → **Registrar recurso**. Se abre su detalle con el código `REC-0019` y stock 0. *(Opcional: repetir el nombre → "Ya existe un recurso con ese nombre en tu centro.")*
+
+## 2. Entradas, salidas y asignaciones (4 min)
+
+**Insumo con lotes (Paracetamol 500 mg):**
+
+1. **Registrar entrada** con cantidad 24 **sin lote** → error dentro del diálogo: "…requiere vencimiento: indica el número de lote y la fecha de vencimiento." (L3).
+2. Escribir el lote `PAR-2612`, una fecha futura, la factura y el costo → **Confirmar**. Aviso "MOV-00xx: entraron 24 caja".
+3. **Registrar salida** de **500** → "Stock insuficiente (disponible: …)." (L2). Cambiar a **30**: el diálogo explica **de qué lote** se descuenta (FEFO: primero el que vence antes; el vencido nunca) → **Confirmar**.
+4. *(Opcional)* **Ajustar stock** sin motivo → "El ajuste exige un motivo." (L7).
+
+**Equipos:**
+
+5. Abrir el **Nebulizador portátil** (disponible) → **Asignar a un médico** → elegir médico y devolución prevista → **Confirmar** (pasa a Asignado).
+6. Intentar asignarlo otra vez (desde la API o con otro equipo asignado como el Electrocardiógrafo, que solo ofrece **Registrar devolución**) → la regla L4 impide asignar un equipo ya asignado (409).
+7. **Registrar devolución** del nebulizador → vuelve a **Disponible**.
+
+**Consumo en una cita:**
+
+8. **Agenda del centro** → abrir una cita **Atendida** → **Registrar insumos usados** → elegir Guantes (1) y Gasas (2) → **Confirmar consumo**. Debajo aparece "Insumos usados" con su valor. *(Si un insumo no alcanza, no se registra ninguno.)*
+
+## 3. Validar disponibilidad (1,5 min)
+
+1. En el detalle del **Paracetamol**: tarjeta **Disponible** (sin vencidos) frente a **Stock total / mínimo** ("2 vencidas, no utilizables"), y la tabla de **lotes** con su vencimiento, estado (Vencido, Vigente) y la marca **SALE PRIMERO**.
+2. Abrir **Tiras reactivas de glucosa** → lote **Próximo a vencer**.
+3. Abrir el **Electrocardiógrafo** → **Asignado a Dr. Ricardo Gómez**, con la devolución prevista. El **Tensiómetro** aparece **En mantenimiento** (no se puede asignar).
+4. **403:** entrar como `centro2@medicita.local` y pegar la URL de un recurso del Centro Médico Esperanza → **Acceso denegado (ERROR 403)**. Como paciente, `/centro/inventario` también da 403. Ambos quedan en la auditoría.
+
+## 4. Historial de movimientos (1,5 min)
+
+1. En el detalle de cualquier recurso, la **línea de tiempo**: cada movimiento con su código `MOV-…`, el **stock antes → después** (o el estado del equipo), el lote, el médico, la cita, la factura, el usuario y el motivo.
+2. Pestaña **Movimientos**: filtrar por **Tipo: Salida**, por **fechas**, por **médico** (asignaciones) o buscar `MOV-0001`.
+3. Comentar: *"Los movimientos no se editan ni se borran; un error se corrige con un ajuste. Todos quedan también en la auditoría."* (Sesión B → **Auditoría** → acciones "Entrada/Salida de inventario", "Equipo asignado").
+
+## 5. Reportes de existencias y de movimientos (2 min)
+
+1. Pestaña **Reportes** → **Existencias**: tarjetas con el **valor total del inventario en DOP** y los totales de **Bajo stock**, **Próximo a vencer** y **Vencido**; equipos por estado; valor por categoría; listas de alertas y la tabla de existencias por recurso.
+2. **Movimientos** (últimas 3 semanas): entradas y salidas en unidades y en DOP, barras por tipo, columnas por día (al pasar el mouse se ve el detalle), tabla por recurso y **consumo por cita**.
+3. **Descargar CSV** (de cada reporte) y **Vista imprimible** → **Imprimir**.
+4. Sesión B (admin) → **Inventario**: recursos, movimientos y reportes de **todos los centros**, con filtro por centro y en solo lectura.
+
+## 6. Pruebas automatizadas (1 min, opcional)
+
+```bash
+npm test
+```
+
+Resultado esperado: **230 pruebas aprobadas** (142 unitarias + 88 e2e). Las 179 de las Épicas 1 y 2 siguen pasando. Ver [PLAN_PRUEBAS.md](PLAN_PRUEBAS.md), que también incluye la sección "Errores encontrados y corregidos".
+
+## Plan B
+
+| Problema | Acción |
+|---|---|
+| Errores 500 en Inventario ("la tabla no existe") | Falta la migración: `npm run db:migrate` y reiniciar `npm run dev`. |
+| Los datos quedaron alterados por un ensayo | `npm run db:seed` restablece el inventario (y las citas) de demo. |
+| No se puede mostrar en vivo | Usar las capturas 35 → 54 de [evidencias/](evidencias/). |
+
+## Evidencias de la Épica 3
+
+| Archivo | Muestra |
+|---|---|
+| [35-inventario-recursos.png](evidencias/35-inventario-recursos.png) / [36-filtro-bajo-stock.png](evidencias/36-filtro-bajo-stock.png) | Recursos con alertas e insignias; filtro de bajo stock. |
+| [37-nuevo-recurso.png](evidencias/37-nuevo-recurso.png) | Registro de un recurso. |
+| [38-detalle-insumo-lotes.png](evidencias/38-detalle-insumo-lotes.png) | Disponibilidad por lote (vencido, vigente, sale primero). |
+| [39-regla-entrada-sin-lote.png](evidencias/39-regla-entrada-sin-lote.png) / [40-regla-stock-insuficiente.png](evidencias/40-regla-stock-insuficiente.png) | Reglas L3 y L2 dentro del diálogo. |
+| [41-salida-fefo-vista-previa.png](evidencias/41-salida-fefo-vista-previa.png) / [42-historial-stock-antes-despues.png](evidencias/42-historial-stock-antes-despues.png) | Salida FEFO y línea de tiempo con stock antes y después. |
+| [43-equipo-asignado.png](evidencias/43-equipo-asignado.png) / [44-asignar-equipo.png](evidencias/44-asignar-equipo.png) / [45-equipo-mantenimiento.png](evidencias/45-equipo-mantenimiento.png) | Equipos: asignado, asignar y en mantenimiento. |
+| [46-registrar-insumos-cita.png](evidencias/46-registrar-insumos-cita.png) / [47-insumos-usados-en-cita.png](evidencias/47-insumos-usados-en-cita.png) | Consumo de insumos en una cita atendida. |
+| [48-movimientos.png](evidencias/48-movimientos.png) | Tabla global de movimientos. |
+| [49-reporte-existencias.png](evidencias/49-reporte-existencias.png) / [50-reporte-movimientos.png](evidencias/50-reporte-movimientos.png) / [51-reporte-imprimible.png](evidencias/51-reporte-imprimible.png) | Reportes de existencias y de movimientos, y vista imprimible. |
+| [52-admin-inventario.png](evidencias/52-admin-inventario.png) | Inventario global del administrador. |
+| [53-recurso-ajeno-403.png](evidencias/53-recurso-ajeno-403.png) / [54-auditoria-inventario.png](evidencias/54-auditoria-inventario.png) | 403 entre centros y auditoría del inventario. |
+| [npm-test.txt](evidencias/npm-test.txt) | Salida completa de `npm test` (230 pruebas). |
 
 > Nunca mostrar ni capturar el archivo `.env`, cookies ni tokens.

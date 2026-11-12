@@ -1,4 +1,4 @@
-# Salida de 'npm test' — 2026-11-05 01:27 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
+# Salida de 'npm test' — 2026-11-12 00:30 (Node v22.16.0, Windows 11, PostgreSQL 16 en Docker)
 
 > medicita-rd@0.1.0 test
 > npm run test -w @medicita/api
@@ -12,25 +12,25 @@
 > @medicita/api@0.1.0 test:e2e
 > jest --config ./test/jest-e2e.json --runInBand
 
-Test Suites: 7 passed, 7 total
-Tests:       105 passed, 105 total
+Test Suites: 11 passed, 11 total
+Tests:       145 passed, 145 total
 Snapshots:   0 total
-Time:        9.194 s
+Time:        7.469 s, estimated 8 s
 Ran all test suites.
 
-Test Suites: 5 passed, 5 total
-Tests:       74 passed, 74 total
+Test Suites: 6 passed, 6 total
+Tests:       88 passed, 88 total
 Snapshots:   0 total
-Time:        37.42 s
+Time:        34.722 s, estimated 38 s
 Ran all test suites.
 
 Código de salida: 0
 
-Total: 179 de 179 pruebas aprobadas (105 unitarias + 74 e2e).
+Total: 233 de 233 pruebas aprobadas (145 unitarias + 88 e2e).
 
 ## Detalle por caso
 
-### Pruebas unitarias (jest): 105/105 aprobadas
+### Pruebas unitarias (jest): 145/145 aprobadas
 
 audit.service.spec.ts
   ✔ AuditService › record › guarda acción, usuario, detalle e IP
@@ -129,6 +129,54 @@ password-policy.spec.ts
   ✔ Política de contraseñas › rechaza una contraseña sin dígito
   ✔ Política de contraseñas › rechaza una contraseña sin símbolo
 
+despliegue.spec.ts
+  ✔ Configuración de despliegue › TU-51 en producción rechaza los secretos de ejemplo y exige WEB_URL
+  ✔ Configuración de despliegue › TU-52 WEB_URL admite varios orígenes separados por coma (sin / final)
+  ✔ Configuración de despliegue › TU-53 TRUST_PROXY: loopback por defecto; true, false o número de saltos
+
+inventario-reportes.service.spec.ts
+  ✔ InventarioReportesService › TU-48 existencias: valor total, bajo stock, próximos a vencer, vencidos y equipos por estado
+  ✔ InventarioReportesService › TU-49 el centro solo ve su centro aunque pida otro
+  ✔ InventarioReportesService › TU-50 el CSV de existencias trae el resumen con el valor total y las alertas
+
+inventario-rules.spec.ts
+  ✔ Reglas de negocio del inventario › TU-34 L1 cantidades enteras mayores que 0 › acepta 1
+  ✔ Reglas de negocio del inventario › TU-34 L1 cantidades enteras mayores que 0 › acepta 5
+  ✔ Reglas de negocio del inventario › TU-34 L1 cantidades enteras mayores que 0 › acepta 1000
+  ✔ Reglas de negocio del inventario › TU-34 L1 cantidades enteras mayores que 0 › rechaza 0 con 400
+  ✔ Reglas de negocio del inventario › TU-34 L1 cantidades enteras mayores que 0 › rechaza -3 con 400
+  ✔ Reglas de negocio del inventario › TU-34 L1 cantidades enteras mayores que 0 › rechaza 1.5 con 400
+  ✔ Reglas de negocio del inventario › TU-34 L1 cantidades enteras mayores que 0 › rechaza NaN con 400
+  ✔ Reglas de negocio del inventario › TU-35 L2 stock suficiente › permite sacar justo lo disponible
+  ✔ Reglas de negocio del inventario › TU-35 L2 stock suficiente › rechaza sacar más con 409 y el disponible en el mensaje
+  ✔ Reglas de negocio del inventario › TU-36 L3 lotes y FEFO › estado del lote: vencido, próximo a vencer (≤ 30 días) o vigente
+  ✔ Reglas de negocio del inventario › TU-36 L3 lotes y FEFO › descuenta primero el lote que vence antes y salta los vencidos y vacíos
+  ✔ Reglas de negocio del inventario › TU-36 L3 lotes y FEFO › el disponible excluye las unidades vencidas
+  ✔ Reglas de negocio del inventario › TU-36 L3 lotes y FEFO › nunca toma lotes vencidos aunque tengan stock (L2 con 409)
+  ✔ Reglas de negocio del inventario › TU-36 L3 lotes y FEFO › la entrada exige lote y vencimiento futuro
+  ✔ Reglas de negocio del inventario › TU-37 L4 asignación de equipos › asigna un equipo disponible a un médico activo del centro con devolución futura
+  ✔ Reglas de negocio del inventario › TU-37 L4 asignación de equipos › solo los equipos se asignan (400)
+  ✔ Reglas de negocio del inventario › TU-37 L4 asignación de equipos › rechaza un equipo ya asignado o en mantenimiento (409)
+  ✔ Reglas de negocio del inventario › TU-37 L4 asignación de equipos › rechaza médico de otro centro, inactivo o devolución en el pasado (400)
+  ✔ Reglas de negocio del inventario › TU-38 L5 devolución y estados del equipo › solo se devuelve un equipo asignado (409)
+  ✔ Reglas de negocio del inventario › TU-38 L5 devolución y estados del equipo › mantenimiento ↔ disponible por ajuste; desde asignado no (409)
+  ✔ Reglas de negocio del inventario › TU-39 L6 recurso inactivo o dado de baja › rechaza movimientos con 409
+  ✔ Reglas de negocio del inventario › TU-39 L6 recurso inactivo o dado de baja › entradas y salidas solo para insumos (400)
+  ✔ Reglas de negocio del inventario › TU-40 L7 ajustes › exige motivo
+  ✔ Reglas de negocio del inventario › TU-40 L7 ajustes › no puede dejar el stock negativo (409)
+  ✔ Reglas de negocio del inventario › TU-41 L8 consumo ligado a una cita › solo citas ATENDIDAS (409 en los demás estados)
+  ✔ Reglas de negocio del inventario › TU-42 L10 alertas › bajo stock cuando el disponible es ≤ mínimo
+  ✔ Reglas de negocio del inventario › TU-42 L10 alertas › los vencidos no cuentan para el disponible (pueden provocar bajo stock)
+  ✔ Reglas de negocio del inventario › TU-42 L10 alertas › próximo a vencer con lotes que vencen en 30 días o menos
+  ✔ Reglas de negocio del inventario › TU-42 L10 alertas › los lotes vacíos no generan alertas y los equipos no tienen alertas
+
+movimientos.service.spec.ts
+  ✔ MovimientosService › TU-43 L9 bloquea la fila del recurso antes de leer el stock y actualiza en la misma transacción
+  ✔ MovimientosService › TU-44 L9 con varios recursos bloquea en orden de id (evita interbloqueos) y es todo o nada
+  ✔ MovimientosService › TU-45 L8 cita de otro centro → 403 auditado; cita pendiente → 409
+  ✔ MovimientosService › TU-46 la salida ligada a una cita guarda el citaId y el motivo "Consumo en la cita"
+  ✔ MovimientosService › TU-47 el acceso se verifica (403 auditado) antes de abrir la transacción
+
 reportes.service.spec.ts
   ✔ ReportesService › TU-28 calcula totales por estado, tasas e ingresos de citas atendidas
   ✔ ReportesService › TU-29 agrupa por médico y por día en hora de RD, con los días vacíos del rango
@@ -151,7 +199,7 @@ users.service.spec.ts
   ✔ UsersService › setActive › rechaza un cambio sin efecto (ya estaba activo)
   ✔ UsersService › expone el catálogo de roles con permisos
 
-### Pruebas e2e (jest + supertest): 74/74 aprobadas
+### Pruebas e2e (jest + supertest): 88/88 aprobadas
 
 access.e2e-spec.ts
   ✔ Roles, permisos y auditoría (e2e) › HU-06 Acceso autorizado y no autorizado › TC-12 responde 401 sin sesión en GET /api/users y lo audita
@@ -219,6 +267,22 @@ citas.e2e-spec.ts
   ✔ Citas: gestión operativa (e2e) › HU-13 Confirmar, cerrar y cancelar › TC-35 transiciones inválidas y citas cerradas responden 409
   ✔ Citas: gestión operativa (e2e) › HU-14 Historial de cambios › TC-40 registra el historial completo y en orden, con actor y estados
   ✔ Citas: gestión operativa (e2e) › HU-14 Historial de cambios › TC-40b si una regla falla no se escribe historial (misma transacción)
+
+inventario.e2e-spec.ts
+  ✔ Inventario: gestión logística (e2e) › HU-16 Registrar y consultar recursos › TC-43 el centro registra insumos y equipos (REC-0001…); nombre repetido 409; paciente y admin no crean (403)
+  ✔ Inventario: gestión logística (e2e) › HU-16 Registrar y consultar recursos › TC-44 consulta con filtros, edición y baja; el admin ve todos los centros
+  ✔ Inventario: gestión logística (e2e) › HU-16 Registrar y consultar recursos › TC-45 un recurso de otro centro responde 403 (auditado) para leerlo o moverlo
+  ✔ Inventario: gestión logística (e2e) › HU-17 Entradas, salidas y ajustes › TC-46 entrada: L3 exige lote y vencimiento futuro; el mismo lote suma
+  ✔ Inventario: gestión logística (e2e) › HU-17 Entradas, salidas y ajustes › TC-47 salida: L2 stock insuficiente 409; L3 FEFO por lotes sin tomar vencidos
+  ✔ Inventario: gestión logística (e2e) › HU-17 Entradas, salidas y ajustes › TC-48 ajuste: L7 exige motivo y no deja stock negativo; los lotes se ajustan uno por uno
+  ✔ Inventario: gestión logística (e2e) › HU-17 Entradas, salidas y ajustes › TC-49 L6 un recurso inactivo no admite movimientos (409)
+  ✔ Inventario: gestión logística (e2e) › HU-18 Asignaciones y devoluciones de equipos › TC-50 L4/L5: asignar, rechazos, devolver, mantenimiento y baja (como ajuste)
+  ✔ Inventario: gestión logística (e2e) › HU-19 Validar disponibilidad › TC-51 disponibilidad por lote (sin vencidos) y del equipo con su asignación
+  ✔ Inventario: gestión logística (e2e) › HU-20 Historial de movimientos › TC-52 historial completo y en orden; filtros; los movimientos no se editan ni se borran
+  ✔ Inventario: gestión logística (e2e) › HU-17 / L8 Insumos usados en una cita › TC-53 consumo atómico ligado a una cita ATENDIDA; pendiente 409; otro centro 403
+  ✔ Inventario: gestión logística (e2e) › L9 Concurrencia › TC-54 cinco salidas simultáneas de 3 con stock 7: solo 2 pasan y el stock nunca queda negativo
+  ✔ Inventario: gestión logística (e2e) › HU-21 Reportes de existencias y de movimientos › TC-55 existencias: valor total, bajo stock, próximo a vencer, vencido y equipos por estado
+  ✔ Inventario: gestión logística (e2e) › HU-21 Reportes de existencias y de movimientos › TC-56 movimientos por tipo, por recurso, por día y consumo; CSV de ambos reportes
 
 medicos.e2e-spec.ts
   ✔ Médicos y horarios (e2e) › HU-09 Gestión de médicos y horarios › TC-23 el centro crea un médico (201), queda asociado a su centro y se audita

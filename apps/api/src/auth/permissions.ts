@@ -13,12 +13,18 @@ export const ROLE_LABELS: Record<Role, string> = {
  */
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   PACIENTE: ['citas:ver', 'medicos:buscar', 'pagos:ver'],
-  CENTRO_MEDICO: ['agenda:gestionar', 'medicos:gestionar', 'reportes:ver'],
+  CENTRO_MEDICO: [
+    'agenda:gestionar',
+    'medicos:gestionar',
+    'reportes:ver',
+    'inventario:gestionar',
+  ],
   ADMIN: [
     'usuarios:gestionar',
     'auditoria:ver',
     'operaciones:ver',
     'reportes:ver',
+    'inventario:ver',
   ],
 };
 

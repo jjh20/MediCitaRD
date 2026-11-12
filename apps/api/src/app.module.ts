@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { CitasModule } from './citas/citas.module';
 import { validateEnv } from './config/env.validation';
 import { HealthController } from './health.controller';
+import { InventarioModule } from './inventario/inventario.module';
 import { MedicosModule } from './medicos/medicos.module';
 import { ModulesController } from './modules/modules.controller';
 import { PrismaModule } from './prisma/prisma.module';
@@ -21,6 +22,7 @@ import { UsersModule } from './users/users.module';
     MedicosModule,
     CitasModule,
     ReportesModule,
+    InventarioModule,
   ],
   controllers: [HealthController, ModulesController],
 })

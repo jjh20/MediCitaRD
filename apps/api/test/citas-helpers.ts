@@ -32,6 +32,19 @@ export function diaHabil(dias: number): string {
   return fecha;
 }
 
+/**
+ * `n` días hábiles después de `fecha`. Garantiza un día distinto: con
+ * diaHabil(3) y diaHabil(5) ambos caían el mismo lunes si se corría un miércoles.
+ */
+export function habilesDespues(fecha: string, n: number): string {
+  let f = fecha;
+  for (let i = 0; i < n; i++) {
+    f = sumarDias(f, 1);
+    while (partesRd(instanteRd(f, 12 * 60)).diaSemana > 5) f = sumarDias(f, 1);
+  }
+  return f;
+}
+
 /** Sábado próximo (para probar R2). */
 export function proximoSabado(): string {
   let fecha = sumarDias(partesRd(new Date()).fecha, 1);

@@ -7,8 +7,15 @@ import { configureApp } from './setup';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   configureApp(app);
-  const port = app.get(ConfigService).get<number>('API_PORT', 4000);
+  const config = app.get(ConfigService);
+  // En Render (y otras plataformas) el puerto llega en PORT; en local, API_PORT
+  const port = Number(
+    config.get<string>('PORT') ?? config.get<string>('API_PORT') ?? 4000,
+  );
   await app.listen(port);
-  Logger.log(`API de MediCita RD en http://localhost:${port}/api`, 'Bootstrap');
+  Logger.log(
+    `API de MediCita RD escuchando en el puerto ${port} (prefijo /api)`,
+    'Bootstrap',
+  );
 }
 void bootstrap();

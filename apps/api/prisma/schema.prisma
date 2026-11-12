@@ -1,5 +1,6 @@
 // Modelo de datos de MediCita RD
 // Épica 1: usuarios, roles y auditoría · Épica 2: médicos, citas e historial
+// Épica 3: inventario (recursos, lotes y movimientos)
 
 generator client {
   provider = "prisma-client-js"
@@ -32,6 +33,11 @@ model User {
   citasPaciente  Cita[]          @relation("CitasPaciente")
   citasCentro    Cita[]          @relation("CitasCentro")
   cambiosDeCitas CitaHistorial[]
+
+  // Épica 3
+  recursos           Recurso[]    @relation("CentroRecursos")
+  movimientosCentro  Movimiento[] @relation("CentroMovimientos")
+  movimientosUsuario Movimiento[] @relation("UsuarioMovimientos")
 
   @@index([role])
 }
@@ -77,23 +83,26 @@ enum AccionCita {
 /// Médico publicado por un centro (usuario con rol CENTRO_MEDICO).
 /// El horario se interpreta en hora de República Dominicana (UTC−4).
 model Medico {
-  id             String   @id @default(uuid())
-  centroId       String
-  centro         User     @relation("CentroMedicos", fields: [centroId], references: [id], onDelete: Restrict)
-  nombre         String   @db.VarChar(120)
-  especialidad   String   @db.VarChar(80)
+  id               String       @id @default(uuid())
+  centroId         String
+  centro           User         @relation("CentroMedicos", fields: [centroId], references: [id], onDelete: Restrict)
+  nombre           String       @db.VarChar(120)
+  especialidad     String       @db.VarChar(80)
   /// Precio de la consulta en pesos dominicanos (DOP)
-  precioConsulta Decimal  @db.Decimal(10, 2)
-  duracionMin    Int      @default(30)
+  precioConsulta   Decimal      @db.Decimal(10, 2)
+  duracionMin      Int          @default(30)
   /// Días de atención: 1 = lunes … 7 = domingo
-  diasSemana     Int[]
+  diasSemana       Int[]
   /// "HH:mm" (hora local de RD)
-  horaInicio     String   @db.VarChar(5)
-  horaFin        String   @db.VarChar(5)
-  activo         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  citas          Cita[]
+  horaInicio       String       @db.VarChar(5)
+  horaFin          String       @db.VarChar(5)
+  activo           Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  citas            Cita[]
+  // Épica 3
+  equiposAsignados Recurso[]    @relation("EquiposAsignados")
+  movimientos      Movimiento[] @relation("MovimientosMedico")
 
   @@index([centroId])
   @@index([especialidad])
@@ -123,6 +132,8 @@ model Cita {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   historial         CitaHistorial[]
+  /// Épica 3: insumos consumidos en la cita
+  movimientos       Movimiento[]
 
   @@index([estado])
   @@index([fechaHora])
@@ -147,4 +158,128 @@ model CitaHistorial {
   createdAt      DateTime    @default(now())
 
   @@index([citaId, createdAt])
+}
+
+// ─── Épica 3: Gestión Logística (inventario) ─────────────────────────
+
+enum TipoRecurso {
+  INSUMO
+  EQUIPO
+}
+
+enum CategoriaRecurso {
+  MATERIAL_MEDICO
+  MEDICAMENTO
+  REACTIVO
+  EQUIPO_MEDICO
+  OTRO
+}
+
+enum EstadoEquipo {
+  DISPONIBLE
+  ASIGNADO
+  MANTENIMIENTO
+  BAJA
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+  AJUSTE
+  ASIGNACION
+  DEVOLUCION
+}
+
+/// Recurso del inventario de un centro: un insumo (con stock) o un equipo
+/// (una unidad con número de serie y estado). Restricción CHECK en la
+/// migración: stockActual >= 0.
+model Recurso {
+  id                  String           @id @default(uuid())
+  centroId            String
+  centro              User             @relation("CentroRecursos", fields: [centroId], references: [id], onDelete: Restrict)
+  /// REC-0001, REC-0002… (lo genera la base con una secuencia)
+  codigo              String           @unique @default(dbgenerated("('REC-'::text || lpad((nextval('\"Recurso_codigo_seq\"'::regclass))::text, 4, '0'::text))")) @db.VarChar(20)
+  nombre              String           @db.VarChar(120)
+  tipo                TipoRecurso
+  categoria           CategoriaRecurso
+  /// unidad, caja, frasco, par…
+  unidad              String           @db.VarChar(30)
+  /// Solo INSUMO (suma de los lotes si requiere vencimiento)
+  stockActual         Int?
+  stockMinimo         Int?
+  /// Último costo unitario (DOP)
+  costoUnitario       Decimal          @db.Decimal(10, 2)
+  requiereVencimiento Boolean          @default(false)
+  /// Solo EQUIPO
+  estadoEquipo        EstadoEquipo?
+  numeroSerie         String?          @db.VarChar(80)
+  /// Solo EQUIPO asignado: médico y devolución prevista
+  medicoAsignadoId    String?
+  medicoAsignado      Medico?          @relation("EquiposAsignados", fields: [medicoAsignadoId], references: [id], onDelete: SetNull)
+  devolucionPrevista  DateTime?
+  activo              Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  lotes               Lote[]
+  movimientos         Movimiento[]
+
+  @@unique([centroId, nombre])
+  @@index([centroId])
+  @@index([tipo])
+  @@index([categoria])
+}
+
+/// Lote de un insumo con vencimiento. CHECK: cantidadDisponible >= 0.
+model Lote {
+  id                 String       @id @default(uuid())
+  recursoId          String
+  recurso            Recurso      @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  numeroLote         String       @db.VarChar(60)
+  fechaVencimiento   DateTime     @db.Date
+  cantidadDisponible Int
+  createdAt          DateTime     @default(now())
+  movimientos        Movimiento[]
+
+  @@unique([recursoId, numeroLote])
+  @@index([recursoId, fechaVencimiento])
+}
+
+/// Movimiento de inventario. Inmutable: no se edita ni se borra; los
+/// errores se corrigen con un AJUSTE.
+model Movimiento {
+  id                      String         @id @default(uuid())
+  /// MOV-0001, MOV-0002… (lo genera la base con una secuencia)
+  codigo                  String         @unique @default(dbgenerated("('MOV-'::text || lpad((nextval('\"Movimiento_codigo_seq\"'::regclass))::text, 4, '0'::text))")) @db.VarChar(20)
+  recursoId               String
+  recurso                 Recurso        @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+  centroId                String
+  centro                  User           @relation("CentroMovimientos", fields: [centroId], references: [id], onDelete: Restrict)
+  usuarioId               String
+  usuario                 User           @relation("UsuarioMovimientos", fields: [usuarioId], references: [id], onDelete: Restrict)
+  tipo                    TipoMovimiento
+  cantidad                Int
+  /// Stock del recurso antes y después (insumos)
+  stockAnterior           Int?
+  stockNuevo              Int?
+  /// Estado del equipo antes y después (equipos)
+  estadoEquipoAnterior    EstadoEquipo?
+  estadoEquipoNuevo       EstadoEquipo?
+  loteId                  String?
+  lote                    Lote?          @relation(fields: [loteId], references: [id], onDelete: SetNull)
+  medicoId                String?
+  medico                  Medico?        @relation("MovimientosMedico", fields: [medicoId], references: [id], onDelete: SetNull)
+  citaId                  String?
+  cita                    Cita?          @relation(fields: [citaId], references: [id], onDelete: SetNull)
+  motivo                  String         @db.VarChar(500)
+  /// Factura o proveedor
+  referencia              String?        @db.VarChar(120)
+  costoUnitario           Decimal?       @db.Decimal(10, 2)
+  fechaDevolucionPrevista DateTime?
+  createdAt               DateTime       @default(now())
+
+  @@index([centroId, createdAt])
+  @@index([recursoId, createdAt])
+  @@index([tipo])
+  @@index([medicoId])
+  @@index([citaId])
 }

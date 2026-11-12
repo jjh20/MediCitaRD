@@ -5,6 +5,7 @@
  *   y BOOTSTRAP_ADMIN_PASSWORD.
  * - Si SEED_DEMO_USERS=true, crea (o restablece) las cuentas de demostración
  *   con DEMO_USERS_PASSWORD: 3 pacientes y 2 centros médicos.
+ * - Épica 3: inventario de los centros de demo (ver seed-inventario.ts).
  * - Épica 2: médicos de los centros de demo y citas repartidas en las
  *   últimas 2 semanas y las próximas 2, con todos los estados e historial.
  *
@@ -34,6 +35,7 @@ import {
   partesRd,
   sumarDias,
 } from '../src/common/rd-time';
+import { seedInventario } from './seed-inventario';
 
 const prisma = new PrismaClient();
 
@@ -558,6 +560,7 @@ async function main() {
       medicos[m.clave] = await upsertMedico(centro2.id, m);
 
     await seedCitas({ p1, p2, p3 }, [centro, centro2], medicos);
+    await seedInventario(prisma, { centro, centro2 }, medicos);
   }
 
   console.log('Seed completado.');

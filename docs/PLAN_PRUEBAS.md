@@ -1,9 +1,10 @@
-# Plan de pruebas y resultados: Épicas 1 y 2
+# Plan de pruebas y resultados: Épicas 1, 2 y 3
 
 ## Alcance
 
 - **Épica 1:** autenticación (registro, login y logout), autorización por rol (API y web), gestión de usuarios (cambio de rol, activación y desactivación) y auditoría.
 - **Épica 2:** médicos y horarios; el ciclo de vida de la cita (crear, consultar, actualizar, reprogramar, confirmar, cerrar y cancelar); las reglas de negocio R1 a R10; los filtros por estado, fecha y responsable; el historial de cambios y el reporte de operaciones (JSON y CSV).
+- **Épica 3:** recursos del inventario (insumos con lotes y equipos); entradas, salidas, ajustes, asignaciones, devoluciones y consumo en citas; las reglas L1 a L10 (FEFO, alertas y concurrencia); la disponibilidad, el historial de movimientos y los reportes de existencias y movimientos (JSON y CSV).
 
 Las historias, los criterios y las reglas están en [HISTORIAS_Y_CRITERIOS.md](HISTORIAS_Y_CRITERIOS.md).
 
@@ -11,12 +12,12 @@ Las historias, los criterios y las reglas están en [HISTORIAS_Y_CRITERIOS.md](H
 
 | Elemento | Valor |
 |---|---|
-| Fecha de ejecución | Épica 1: 2026-11-03 · Épica 2: 2026-11-04 y 2026-11-05 |
+| Fecha de ejecución | Épica 1: 2026-11-03 · Épica 2: 2026-11-04 y 2026-11-05 · Épica 3: 2026-11-11 |
 | Sistema operativo | Windows 11 Pro |
 | Node.js / npm | 22.16.0 / 10.9.2 |
 | Base de datos | PostgreSQL 16.15 (Docker 29.9.2); las pruebas e2e usan la base aislada `medicita_test` |
 | Herramientas | Jest 30.5, supertest 7.3, ts-jest. Pruebas web: Microsoft Edge (headless, automatizado con puppeteer-core) y curl |
-| Código probado | Épica 1: rama `main`, bloque de pruebas `467dff7` y siguientes · Épica 2: rama `Jael`, sobre `38aac74` |
+| Código probado | Épica 1: rama `main`, bloque de pruebas `467dff7` y siguientes · Épica 2: rama `Jael`, sobre `38aac74` · Épica 3: rama `Jael`, sobre `02322bc` |
 
 ## Cómo ejecutar
 
@@ -37,9 +38,13 @@ Las e2e aplican las migraciones a `medicita_test` antes de empezar, vacían las 
 | E2E API (`TC-`) | 2 | TC-23 a TC-42 (+ variantes) | 30 | 30 | 0 |
 | Web (`TW-`) | 1 | TW-01 a TW-13 | 13 | 13 | 0 |
 | Web (`TW-`) | 2 | TW-14 a TW-24 | 11 | 11 | 0 |
-| **Total** | | | **203** | **203** | **0** |
+| Unitarias (`TU-`) | 3 | TU-34 a TU-50 (+ variantes) | 37 | 37 | 0 |
+| E2E API (`TC-`) | 3 | TC-43 a TC-56 | 14 | 14 | 0 |
+| Web (`TW-`) | 3 | TW-25 a TW-34 | 10 | 10 | 0 |
+| Unitarias (`TU-`) | Despliegue | TU-51 a TU-53 | 3 | 3 | 0 |
+| **Total** | | | **267** | **267** | **0** |
 
-`npm test` ejecuta **179 pruebas automatizadas** (105 unitarias + 74 e2e), todas aprobadas. Las 80 de la Épica 1 siguen pasando sin cambios.
+`npm test` ejecuta **233 pruebas automatizadas** (145 unitarias + 88 e2e), todas aprobadas. Las 179 de las Épicas 1 y 2 siguen pasando.
 
 Salida completa de `npm test`, con el detalle de cada caso: [evidencias/npm-test.txt](evidencias/npm-test.txt).
 
@@ -115,6 +120,27 @@ Archivos: [apps/api/test/medicos.e2e-spec.ts](../apps/api/test/medicos.e2e-spec.
 | TC-41e | HU-15 | Rango invertido y fecha `02-11-2026`. | 400 y 400. | ✅ Aprobado |
 | TC-42 | HU-15 | `GET /reportes/citas.csv` con el rango. | `text/csv`, `Content-Disposition` con el nombre `reporte-citas_2026-11-02_2026-11-06.csv`; líneas de resumen (total 9, asistencia 80.0 %, cancelación 22.2 %, ingresos 7500.00) y 9 filas de detalle. | ✅ Aprobado |
 
+### Épica 3
+
+Archivo: [apps/api/test/inventario.e2e-spec.ts](../apps/api/test/inventario.e2e-spec.ts). Las fechas de vencimiento se calculan respecto a hoy; los lotes vencidos se insertan directamente en la base, porque la API no los acepta (L3).
+
+| ID | HU / Regla | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|---|
+| TC-43 | HU-16 | El centro registra un insumo y un equipo; repite el nombre; el centro 2 usa el mismo nombre; el paciente lista; el admin intenta crear. | 201 `REC-0001` (stock 0) y `REC-0002` (DISPONIBLE); 409 "Ya existe un recurso con ese nombre en tu centro."; 201 en el otro centro; 403 y 403; 3 `RECURSO_CREADO` y `ACCESS_DENIED_403` auditados. | ✅ Aprobado |
+| TC-44 | HU-16, HU-19 | Filtros por tipo, categoría, texto, `estado=bajo_stock`, `estado=disponible`, `centroId` (admin) y estado inválido; editar; dar de baja y reactivar. | Centro 3, equipos 1, medicamentos 1, texto `REC-0001` → Gasas; bajo stock 2 con `resumen.bajoStock=2`; admin 4 (centro 2: 1); estado inválido 400; PATCH 200; inactivo 1. | ✅ Aprobado |
+| TC-45 | HU-16 | El centro 2 lee, consulta el historial, registra una entrada y edita un recurso del centro 1. | 403 "Acceso denegado: este recurso pertenece a otro centro." en los 4 casos, 4 eventos `ACCESS_DENIED_403` con el código y el stock sin cambios. | ✅ Aprobado |
+| TC-46 | HU-17, L1, L3 | Entrada sin lote, con vencimiento pasado, con cantidad 0, válida (con factura y costo), al mismo lote y al mismo lote con otra fecha. | 400, 400, 400; 201 `MOV-0001` 0→10 con referencia y costo; 201 (suma al lote); 400 "ya existe con vencimiento"; stock 15; el costo de la entrada pasa a ser el último costo. | ✅ Aprobado |
+| TC-47 | HU-17, L2, L3 | Salida mayor al stock y con cantidad negativa; salida FEFO de 6 con lotes PRONTO (4), TARDE (10) y un VENCIDO (50). | 409 "Stock insuficiente (disponible: 8)."; 400; FEFO: 4 de PRONTO (64→60) y 2 de TARDE (60→58); pedir 9 → 409 "(disponible: 8)"; el lote vencido sigue con 50. | ✅ Aprobado |
+| TC-48 | HU-17, L7 | Ajuste sin motivo, disminución mayor al stock, aumento; ajuste de un insumo con lotes sin lote y con lote. | 400 "El ajuste exige un motivo."; 409 "…(disponible: 5)."; 201 5→7; 400 "Indica el lote…"; 201 y el lote baja a 2. | ✅ Aprobado |
+| TC-49 | HU-17, L6 | Desactivar un insumo con stock 5 e intentar una entrada y una salida. | 409 "…está inactivo y no admite movimientos." en ambos; el stock sigue en 5. | ✅ Aprobado |
+| TC-50 | HU-18, L4, L5, L6 | Asignar a un médico inactivo, de otro centro, con fecha pasada, un insumo; asignar bien; reasignar; mantenimiento y baja estando asignado; devolver dos veces; mantenimiento; asignar en mantenimiento; volver a disponible; dar de baja; asignar dado de baja. | 400 ×4; 201 DISPONIBLE→ASIGNADO con el médico; 409 "ya está asignado a Dra. Laura Fernández"; 409 y 409; 201 y 409 "(estado actual: Disponible)"; 201; 409 "en mantenimiento"; 201; 200 BAJA; 409 "dado de baja". Movimientos: ASIGNACION, DEVOLUCION, AJUSTE ×3. | ✅ Aprobado |
+| TC-51 | HU-19, L10 | Insumo con lotes PROX (+10 días), LEJOS (+100) y VIEJO (vencido); equipo asignado consultado por el admin. | Disponible 9 de 13, alertas bajo stock + próximo a vencer + vencido; lotes en orden VIEJO (no utilizable), PROX, LEJOS; equipo ASIGNADO a la Dra. Laura, no disponible, sin atraso. | ✅ Aprobado |
+| TC-52 | HU-20 | Entrada, salida, ajuste y salida; historial del recurso; filtros de `/movimientos`; alcance por rol; `PATCH`/`DELETE` de un movimiento. | Historial `MOV-0001…0004` en orden con 0→10, 10→7, 7→5, 5→4 y el usuario; filtros: salidas 2, médico 1, recurso 4, hoy 5, ayer 0, usuario 5; centro 2 ve 0, admin 5, paciente 403; PATCH y DELETE 404; 5 movimientos y 5 eventos `MOV_*`. | ✅ Aprobado |
+| TC-53 | HU-17, L8 | Consumo de 2 insumos en una cita ATENDIDA donde el segundo no alcanza; consumo válido; salida ligada a una cita PENDIENTE; consumo en una cita de otro centro. | 409 y **ningún** movimiento (todo o nada); 201 con 2 SALIDAS ligadas a la cita; 409 "…está Pendiente"; 403 "la cita pertenece a otro centro"; stock final correcto. | ✅ Aprobado |
+| TC-54 | L9 | 5 salidas simultáneas (`Promise.all`) de 3 unidades con stock 7. | Exactamente 2×201 y 3×409; stock final 1; las salidas registran 7→4 y 4→1. | ✅ Aprobado (repetido 4 veces seguidas sin fallos) |
+| TC-55 | HU-21 | Reporte de existencias con datos fijos (bajo stock, lote próximo, lote vencido, equipos asignado y disponible); admin global; el centro 2 pide otro centro; paciente. | Valor insumos 1,100, equipos 13,000, **total 14,100**; bajo stock 1; próximo 1 (8 u.); vencido 1 (6 u., RD$300); equipos 1 disponible y 1 asignado; admin 5 recursos; centro 2 solo lo suyo; 403. | ✅ Aprobado |
+| TC-56 | HU-21 | Reporte de movimientos de 3 días con un consumo en cita; rango invertido; CSV de movimientos y de existencias. | 5 movimientos, 14 u. entraron (RD$900), 3 salieron (RD$200), 1 cita con consumo (RD$100); la asignación vale 0; 3 días; 400; CSV con `Content-Disposition` y líneas de resumen; existencias con "Valor total del inventario (DOP),14000.00". | ✅ Aprobado |
+
 ## 2. Pruebas unitarias (automatizadas, `npm test`)
 
 ### Épica 1
@@ -164,6 +190,39 @@ Archivos: [cita-rules.spec.ts](../apps/api/src/citas/cita-rules.spec.ts) (reglas
 
 > **Nota sobre "último administrador activo":** como el admin tampoco puede modificarse a sí mismo y quien actúa siempre es un admin activo, desde la API este caso solo podría ocurrir con operaciones concurrentes. Por eso la regla se prueba de forma unitaria (TU-04 y TU-05) y en la API se aplica dentro de una transacción `Serializable`.
 
+### Épica 3
+
+Archivos: [inventario-rules.spec.ts](../apps/api/src/inventario/inventario-rules.spec.ts) (reglas L1–L10 como funciones puras), [movimientos.service.spec.ts](../apps/api/src/inventario/movimientos.service.spec.ts) (servicio con Prisma simulado) y [inventario-reportes.service.spec.ts](../apps/api/src/inventario/inventario-reportes.service.spec.ts). Fecha fija: 11 de noviembre de 2026.
+
+| ID | Regla / HU | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|---|
+| TU-34 | L1 | Cantidades 1, 5 y 1000; 0, −3, 1.5 y NaN. | Aceptadas; 400 "La cantidad debe ser un número entero mayor que 0." | ✅ Aprobado (7/7) |
+| TU-35 | L2 | Sacar 8 de 8 y 9 de 8. | Permitido; 409 "Stock insuficiente (disponible: 8)." | ✅ Aprobado (2/2) |
+| TU-36 | L3, L10 | Estado del lote en los límites (ayer, hoy, +30 y +31 días); FEFO de 12 con 5 lotes (uno vencido y uno vacío); disponible sin vencidos; pedir más de lo utilizable; lote obligatorio y fecha futura en la entrada. | Vencido, próximo, próximo, vigente; reparto A 4, B 6, C 2; disponible 20; 409 "(disponible: 20)"; mensajes de L3. | ✅ Aprobado (5/5) |
+| TU-37 | L4 | Asignación válida; insumo; equipo asignado o en mantenimiento; médico de otro centro, inactivo o devolución en el pasado. | Permitida; 400; 409 "…ya está asignado a Dra. Laura…" y 409; 400 en los tres. | ✅ Aprobado (4/4) |
+| TU-38 | L5 | Devolver un equipo asignado y uno disponible; mantenimiento ↔ disponible; mantenimiento estando asignado. | Permitido y 409 "(estado actual: Disponible)"; permitido; 409 "Primero registra la devolución". | ✅ Aprobado (2/2) |
+| TU-39 | L6 | Insumo inactivo, equipo de baja y activo; entrada a un equipo. | 409 "…está inactivo…" y "dado de baja"; permitido; 400. | ✅ Aprobado (2/2) |
+| TU-40 | L7 | Ajuste sin motivo; disminución de 6 con 5; disminución de 5 con 5; aumento desde 0. | 400; 409 "(disponible: 5)"; permitido; permitido. | ✅ Aprobado (2/2) |
+| TU-41 | L8 | Cita Atendida, Pendiente y No asistió. | Permitido; 409 "…(CIT-2 está Pendiente)."; 409. | ✅ Aprobado (1/1) |
+| TU-42 | L10 | Disponible = mínimo y mínimo + 1; lote vencido que deja el disponible bajo el mínimo; lote a 20 días; lotes vacíos y equipos. | Bajo stock sí/no; bajo stock + vencido; próximo a vencer; sin alertas. | ✅ Aprobado (4/4) |
+| TU-43 | L9 | Salida de 4 con stock 10. | Orden: `tx → lock (FOR UPDATE) → movimiento → stock 6`, y `MOV_SALIDA` auditado. | ✅ Aprobado (1/1) |
+| TU-44 | L9, L8 | Consumo de dos recursos (b, a) donde el segundo no alcanza. | Bloquea en orden de id (a, b) para evitar interbloqueos; 409 y nada auditado. | ✅ Aprobado (1/1) |
+| TU-45 | L8 | Salida ligada a una cita de otro centro y a una cita pendiente. | 403 con `audit.forbidden` (actor, cita e IP); 409 sin abrir la transacción. | ✅ Aprobado (1/1) |
+| TU-46 | L8 | Salida ligada a una cita atendida. | El movimiento guarda `citaId` y "Consumo en la cita CIT-0001". | ✅ Aprobado (1/1) |
+| TU-47 | HU-16 | Entrada a un recurso ajeno. | 403 antes de abrir la transacción. | ✅ Aprobado (1/1) |
+| TU-48 | HU-21 | Existencias con un insumo en bajo stock, uno con lotes vencido/próximo/vigente y un equipo asignado. | Valor total 153,500; bajo stock 1; próximo 1 (8 u.); vencido 1 (10 u., RD$1,000); equipos por estado. | ✅ Aprobado (1/1) |
+| TU-49 / TU-50 | HU-21 | El centro pide otro centro; CSV de existencias. | Forzado a su centro; BOM, valor total y las tres alertas en el resumen. | ✅ Aprobado (2/2) |
+
+### Configuración de producción (despliegue)
+
+Archivo: [despliegue.spec.ts](../apps/api/src/config/despliegue.spec.ts). Además se simuló el despliegue en local con `NODE_ENV=production` y solo variables de entorno (sin `.env`): la API arrancó con `npm run start:deploy` ("No pending migrations to apply") en `PORT=4100` y la web compilada con `API_INTERNAL_URL` apuntando a ella. Resultados: el proxy `/api` responde; el login devuelve la cookie `HttpOnly; Secure; SameSite=Lax`; el CORS solo acepta `WEB_URL`; las páginas protegidas responden 200 con sesión, 307 a "Acceso denegado" con otro rol y 307 al login sin sesión. Un build de la web "como en Vercel" sin `API_INTERNAL_URL` falla con un mensaje claro.
+
+| ID | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|
+| TU-51 | `validateEnv` en producción con el `JWT_SECRET` de ejemplo, sin `WEB_URL` y con todo correcto; en desarrollo con el valor de ejemplo. | Error "no puede usar el valor de ejemplo"; error "falta WEB_URL"; acepta; acepta. | ✅ Aprobado (1/1) |
+| TU-52 | `origenesCors` sin valor y con dos URLs (espacios y `/` final). | `http://localhost:3000`; las dos URLs limpias. | ✅ Aprobado (1/1) |
+| TU-53 | `trustProxy` sin valor, `true`, `false` y `2`. | `loopback`, `true`, `false` y `2`. | ✅ Aprobado (1/1) |
+
 ## 3. Pruebas de la interfaz web
 
 ### Épica 1
@@ -204,18 +263,66 @@ Se ejecutaron el 2026-11-05 con el mismo método: un recorrido automatizado de p
 | TW-23 | HU-11, HU-15 | Admin → "Operaciones" y "Reportes"; centro → "Reportes". | Operaciones con el filtro de centro; reporte con tarjetas (total, asistencia, cancelación e ingresos), barras por estado, columnas por día con leyenda, tabla por médico y "Descargar CSV". El centro ve solo su centro. | ✅ Aprobado ([29](evidencias/29-reporte-centro.png), [30](evidencias/30-operaciones-admin.png), [31](evidencias/31-reportes-admin.png)) |
 | TW-24 | HU-15 | "Vista imprimible". | Página con el logo, el rango y la fecha de generación, el botón "Imprimir", y al imprimir sin el menú lateral. | ✅ Aprobado ([32](evidencias/32-reporte-imprimible.png)) |
 
-## Defectos encontrados y corregidos durante la ejecución
+### Épica 3
 
-| Hallazgo | Corrección |
-|---|---|
-| Jest avisaba "worker failed to exit gracefully" al correr las unitarias en paralelo en Windows (módulos nativos bcrypt y Prisma). | `test:unit` usa `--runInBand`; el aviso desaparece y la ejecución es más rápida. |
-| Al cambiar un filtro de la tabla podía llegar primero una respuesta vieja. | La página se reinicia en el manejador del filtro y se descartan las respuestas que no son la última petición. |
-| `next` quedó instalado sin elevar al workspace y ESLint no lo encontraba. | Reinstalación limpia de dependencias (`npm install`) para que npm lo eleve. |
-| El indicador de desarrollo de Next tapaba "Cerrar sesión" en las capturas. | `devIndicators: false` en `next.config.ts`. |
-| `GET /api/health` respondía 401 porque el guard global de autenticación también se aplicaba a esa ruta. | Se marcó con `@Public()` y se agregó el caso TC-14b. |
-| **Épica 2:** error de hidratación de React en el detalle de la cita: Node escribe "10:30 a.&nbsp;m." con un espacio especial (U+00A0) y Edge con un espacio normal. | Los formateadores de fecha, hora y moneda (`lib/citas.ts`) normalizan esos espacios. |
-| **Épica 2:** en pantallas angostas, el perfil del médico se desbordaba a lo ancho por la tira de días. | Columnas con `minmax(0, 1fr)` en el perfil, el detalle y el reporte. |
-| **Épica 2:** con un 409 (horario tomado), el diálogo de confirmación quedaba abierto sin turno elegido. | El diálogo se cierra, el error se muestra bajo el selector y la disponibilidad se recarga. |
-| **Épica 2:** el eje del gráfico por día mostraba "3, 2, 0" con la marca del medio en 1,5. | El máximo se redondea a un número par, así que las marcas son enteras. |
-| **Épica 2:** al repetir el seed, los códigos seguían subiendo (CIT-0044…). | Si no quedan otras citas, el seed reinicia la secuencia y vuelve a empezar en CIT-0001. |
-| **Épica 2:** el detalle de auditoría decía "la cita … ajeno". | Texto neutro: "intentó acceder sin permiso a la cita CIT-…". |
+Se ejecutaron el 2026-11-11 con un recorrido automatizado (centro → admin → centro 2) sobre los datos del seed. Capturas de la 35 a la 54 en [evidencias/](evidencias/). El recorrido no registró errores de consola ni de hidratación.
+
+| ID | HU / Regla | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|---|
+| TW-25 | HU-16, HU-19 | Centro → Inventario → Recursos; pulsar la tarjeta "Bajo stock". | Tarjetas con 2 bajo stock, 1 próximo a vencer y 1 con lotes vencidos; tabla con insignias y estado de los equipos; al pulsar, solo los 2 insumos en bajo stock. | ✅ Aprobado ([35](evidencias/35-inventario-recursos.png), [36](evidencias/36-filtro-bajo-stock.png)) |
+| TW-26 | HU-16 | "Nuevo recurso". | Diálogo con Insumo o Equipo, categoría, unidad, costo, mínimo y "Maneja lotes y vencimiento". | ✅ Aprobado ([37](evidencias/37-nuevo-recurso.png)) |
+| TW-27 | HU-17, HU-19, L3 | Detalle de Paracetamol (lotes); "Registrar entrada" sin lote; luego con lote y fecha. | Lotes con estado (vencido, vigente) y "SALE PRIMERO"; error en el diálogo "…requiere vencimiento: indica el número de lote…"; con lote, entrada registrada. | ✅ Aprobado ([38](evidencias/38-detalle-insumo-lotes.png), [39](evidencias/39-regla-entrada-sin-lote.png)) |
+| TW-28 | HU-17, HU-20, L2 | "Registrar salida" de 500; luego de 30 con motivo. | Error "Stock insuficiente (disponible: 64)."; vista previa "Se descontará 30 del lote PAR-2611 (primero el que vence antes)"; la línea de tiempo muestra el stock antes y después. | ✅ Aprobado ([40](evidencias/40-regla-stock-insuficiente.png), [41](evidencias/41-salida-fefo-vista-previa.png), [42](evidencias/42-historial-stock-antes-despues.png)) |
+| TW-29 | HU-18 | Electrocardiógrafo asignado; asignar el nebulizador; tensiómetro en mantenimiento. | Disponibilidad con médico y devolución prevista; diálogo de asignación con médico y fecha; equipo en mantenimiento con su ajuste en el historial. | ✅ Aprobado ([43](evidencias/43-equipo-asignado.png), [44](evidencias/44-asignar-equipo.png), [45](evidencias/45-equipo-mantenimiento.png)) |
+| TW-30 | HU-17, L8 | Detalle de una cita Atendida → "Registrar insumos usados" → Guantes. | Diálogo con insumos y cantidades; al confirmar, "Insumos usados" lista lo consumido con su valor. | ✅ Aprobado ([46](evidencias/46-registrar-insumos-cita.png), [47](evidencias/47-insumos-usados-en-cita.png)) |
+| TW-31 | HU-20 | Inventario → Movimientos. | Tabla con tipo, código, fecha, recurso, cantidad, stock o estado, detalle (lote, médico, cita) y usuario, con filtros. | ✅ Aprobado ([48](evidencias/48-movimientos.png)) |
+| TW-32 | HU-21 | Reportes → Existencias y Movimientos; vista imprimible. | Existencias: **valor total del inventario**, **Bajo stock**, **Próximo a vencer** y **Vencido** en tarjetas, equipos por estado, valor por categoría, listas y tabla. Movimientos: tarjetas, barras por tipo, columnas por día, tabla por recurso y consumo por cita. | ✅ Aprobado ([49](evidencias/49-reporte-existencias.png), [50](evidencias/50-reporte-movimientos.png), [51](evidencias/51-reporte-imprimible.png)) |
+| TW-33 | HU-16 | Admin → Inventario. | Recursos de los dos centros con columna y filtro por centro, sin botón "Nuevo recurso". | ✅ Aprobado ([52](evidencias/52-admin-inventario.png)) |
+| TW-34 | HU-16 | `centro2@` abre la URL de un recurso del Centro Médico Esperanza; Auditoría. | "Acceso denegado (ERROR 403)"; la auditoría muestra los movimientos (`Entrada/Salida de inventario`, `Equipo asignado`) y el 403. | ✅ Aprobado ([53](evidencias/53-recurso-ajeno-403.png), [54](evidencias/54-auditoria-inventario.png)) |
+
+## Errores encontrados y corregidos
+
+Errores reales que aparecieron durante el desarrollo y las pruebas de las tres épicas, cómo se detectaron y cómo se corrigieron. Se reconstruyeron con el historial de git (`git log`) y con las notas de cada ejecución.
+
+### Épica 1: Gestión de usuarios y accesos
+
+| # | Qué fallaba | Cómo se detectó | Cómo se corrigió |
+|---|---|---|---|
+| E1-1 | `GET /api/health` respondía 401: el guard global de autenticación también se aplicaba a la ruta de salud. | Al comprobar la API sin sesión antes de la demo. | Se marcó la ruta con `@Public()` y se agregó la prueba TC-14b (commit `3bf860a`). |
+| E1-2 | Jest avisaba "worker failed to exit gracefully" al correr las unitarias en paralelo en Windows (módulos nativos de bcrypt y Prisma). | Salida de `npm test`. | `test:unit` usa `--runInBand`: el aviso desaparece y la ejecución es más rápida. |
+| E1-3 | Al cambiar rápido un filtro de una tabla, podía mostrarse una respuesta vieja que llegaba después de la nueva. | Prueba manual de los filtros de Usuarios y Auditoría. | La página se reinicia en el manejador del filtro y se descartan las respuestas que no son de la última petición. |
+| E1-4 | ESLint no encontraba `next` porque quedó instalado sin elevar al workspace. | `npm run lint` fallaba en la web. | Reinstalación limpia de dependencias (`npm install`) para que npm lo eleve. |
+| E1-5 | El indicador de desarrollo de Next.js tapaba "Cerrar sesión" en las capturas. | Al revisar las capturas de evidencia. | `devIndicators: false` en `next.config.ts` (commit `19d51a3`). |
+
+### Épica 2: Gestión Operativa (citas)
+
+| # | Qué fallaba | Cómo se detectó | Cómo se corrigió |
+|---|---|---|---|
+| E2-1 | Error de hidratación de React en el detalle de la cita: Node escribe "10:30 a.&nbsp;m." con un espacio especial (U+00A0) y Edge con un espacio normal. | Recorrido automatizado con puppeteer (error en la consola del navegador). | Los formateadores de fecha, hora y moneda (`lib/citas.ts`) normalizan esos espacios. |
+| E2-2 | En pantallas angostas, el perfil del médico se desbordaba a lo ancho por la tira de días. | Revisión de las capturas. | Columnas con `minmax(0, 1fr)` en el perfil, el detalle y el reporte. |
+| E2-3 | Con un 409 (horario tomado), el diálogo de confirmación quedaba abierto sin turno elegido. | Recorrido automatizado al provocar la regla R4. | El diálogo se cierra, el error se muestra bajo el selector y la disponibilidad se recarga. |
+| E2-4 | El eje del gráfico por día mostraba "3, 2, 0", con la marca del medio en 1,5. | Revisión de la captura del reporte. | El máximo se redondea a un número par, así que las marcas son enteras. |
+| E2-5 | Al repetir el seed, los códigos de cita seguían subiendo (CIT-0044…). | Al ejecutar el seed dos veces seguidas. | Si no quedan otras citas, el seed reinicia la secuencia y vuelve a empezar en CIT-0001. |
+| E2-6 | El detalle de auditoría decía "intentó acceder a la cita … ajeno" (concordancia). | Revisión de la captura de la auditoría. | Texto neutro: "intentó acceder sin permiso a la cita CIT-…". |
+| E2-7 | `npm run lint` fallaba con `no-irregular-whitespace`: el BOM del CSV quedó escrito como carácter literal en un regex. | `npm run lint`. | Se reemplazó por la secuencia de escape `﻿`. |
+| E2-8 | **Prueba frágil:** TC-39 esperaba 2 citas en un día y encontraba 3. Las fechas `diaHabil(3)` y `diaHabil(5)` caían el mismo lunes cuando la suite corría un miércoles (el fin de semana se corre al lunes). | Al correr `npm test` un miércoles, durante la Épica 3 (falló 1 de 179). | Nueva función `habilesDespues(fecha, 2)`, que garantiza un día hábil distinto. |
+
+### Épica 3: Gestión Logística (inventario)
+
+| # | Qué fallaba | Cómo se detectó | Cómo se corrigió |
+|---|---|---|---|
+| E3-1 | El reporte de movimientos sumaba el costo del equipo como valor de una asignación (RD$10,000 por asignar un electrocardiógrafo), lo que inflaba el "valor movido". | Prueba e2e TC-56 (esperaba valor 0 en la asignación). | Los movimientos de equipos (asignar, devolver o cambiar estado) valen 0 en el reporte; el valor del equipo solo cuenta en las existencias. |
+| E3-2 | El historial de demo no cuadraba: un consumo del 29/10 mostraba stock 46→44 antes de la entrada del 30/10 (20→60). El seed procesaba los consumos de las citas después del resto de eventos. | Revisión de la captura del historial del Paracetamol. | El seed encola todos los eventos y los ejecuta en orden de fecha; ahora el stock y los códigos MOV siguen la línea de tiempo. |
+| E3-3 | El mensaje de L8 mostraba el estado de la cita en minúsculas y sin tilde ("está no asistio"). | Prueba de humo contra la API. | Usa las etiquetas de estado de la Épica 2: "(CIT-0021 está Pendiente)". |
+| E3-4 | En el diálogo de movimiento, el error de un intento anterior seguía visible al cambiar la cantidad. | Revisión de la captura de la salida FEFO. | El error se limpia al editar la cantidad. |
+| E3-5 | El aviso del consumo decía "Se registraron 1 salidas". | Revisión de la captura del consumo en la cita. | Mensaje en singular o plural según la cantidad. |
+| E3-6 | La prueba del CSV esperaba la etiqueta "Próximo a vencer (lotes, 30 días)" sin comillas; el CSV la escribe entre comillas porque contiene una coma (comportamiento correcto). | Prueba unitaria TU-50. | Se corrigió la expectativa de la prueba. |
+| E3-7 | Al terminar una herramienta de escritura, `﻿` quedaba como carácter literal (invisible) en el código del CSV. | Revisión del archivo antes de correr el lint. | Se reemplazó por la secuencia de escape, igual que en E2-7. |
+
+> **Observación y verificación de estabilidad:** en una corrida completa de `npm test` durante la Épica 3 fallaron 2 pruebas e2e y no se guardó el detalle. Para buscar la causa se ejecutó, el 2026-11-11:
+>
+> - `npm test` completo **5 veces seguidas**: 230/230 en las 5. La corrida 3 cruzó la medianoche en hora de RD (el caso de riesgo de las pruebas con fechas relativas) y la 4 y la 5 corrieron ya en el día siguiente.
+> - Las unitarias y las e2e en **orden aleatorio** (`jest --randomize`, semillas 101, 202 y 303): 142/142 y 88/88 en las tres, así que no hay dependencia del orden ni datos compartidos entre pruebas (cada e2e vacía la base antes de empezar).
+> - Las dos pruebas de **concurrencia** (TC-38 reservas simultáneas y TC-54 salidas simultáneas) **10 veces seguidas**: 10/10.
+>
+> La falla no se reprodujo. La única causa confirmada de inestabilidad fue la de las fechas de TC-39 (E2-8), ya corregida.

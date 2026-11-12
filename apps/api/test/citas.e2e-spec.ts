@@ -5,6 +5,7 @@ import { AuditAction } from '../src/audit/audit-actions';
 import {
   createMedico,
   diaHabil,
+  habilesDespues,
   HORA_MS,
   insertCita,
   proximoSabado,
@@ -35,7 +36,7 @@ describe('Citas: gestión operativa (e2e)', () => {
   const http = () => request(ctx.app.getHttpServer());
 
   const fecha = diaHabil(3);
-  const fecha2 = diaHabil(5);
+  const fecha2 = habilesDespues(fecha, 2);
 
   beforeAll(async () => {
     ctx = await createTestApp();

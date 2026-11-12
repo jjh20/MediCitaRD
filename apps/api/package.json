@@ -9,6 +9,7 @@
     "dev": "dotenv -e ../../.env -- nest start --watch",
     "start": "dotenv -e ../../.env -- nest start",
     "start:prod": "dotenv -e ../../.env -- node dist/main",
+    "start:deploy": "prisma migrate deploy && node dist/main",
     "lint": "eslint \"{src,test,prisma}/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\"",
     "prisma:generate": "prisma generate",
